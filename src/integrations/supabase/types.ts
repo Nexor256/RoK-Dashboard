@@ -14,7 +14,133 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      governor_stats: {
+        Row: {
+          alliance: string | null
+          dead_troops: number | null
+          deaths: number | null
+          governor_name: string
+          healed: number | null
+          id: string
+          power: number | null
+          power_growth: number | null
+          resource_gathered: number | null
+          snapshot_id: string
+          t4_kills: number | null
+          t5_kills: number | null
+        }
+        Insert: {
+          alliance?: string | null
+          dead_troops?: number | null
+          deaths?: number | null
+          governor_name: string
+          healed?: number | null
+          id?: string
+          power?: number | null
+          power_growth?: number | null
+          resource_gathered?: number | null
+          snapshot_id: string
+          t4_kills?: number | null
+          t5_kills?: number | null
+        }
+        Update: {
+          alliance?: string | null
+          dead_troops?: number | null
+          deaths?: number | null
+          governor_name?: string
+          healed?: number | null
+          id?: string
+          power?: number | null
+          power_growth?: number | null
+          resource_gathered?: number | null
+          snapshot_id?: string
+          t4_kills?: number | null
+          t5_kills?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "governor_stats_snapshot_id_fkey"
+            columns: ["snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "snapshots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kvk_stats: {
+        Row: {
+          alliance: string | null
+          contribution: number | null
+          garrisons_joined: number | null
+          governor_name: string
+          honor: number | null
+          id: string
+          kvk_deaths: number | null
+          kvk_kills: number | null
+          passes_used: number | null
+          rallies_joined: number | null
+          snapshot_id: string
+        }
+        Insert: {
+          alliance?: string | null
+          contribution?: number | null
+          garrisons_joined?: number | null
+          governor_name: string
+          honor?: number | null
+          id?: string
+          kvk_deaths?: number | null
+          kvk_kills?: number | null
+          passes_used?: number | null
+          rallies_joined?: number | null
+          snapshot_id: string
+        }
+        Update: {
+          alliance?: string | null
+          contribution?: number | null
+          garrisons_joined?: number | null
+          governor_name?: string
+          honor?: number | null
+          id?: string
+          kvk_deaths?: number | null
+          kvk_kills?: number | null
+          passes_used?: number | null
+          rallies_joined?: number | null
+          snapshot_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kvk_stats_snapshot_id_fkey"
+            columns: ["snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "snapshots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      snapshots: {
+        Row: {
+          created_at: string
+          id: string
+          label: string | null
+          snapshot_date: string
+          snapshot_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label?: string | null
+          snapshot_date: string
+          snapshot_type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string | null
+          snapshot_date?: string
+          snapshot_type?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
