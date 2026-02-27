@@ -76,6 +76,42 @@ export const snapshots: Snapshot[] = [
 
 export const currentGovernors = snapshots[snapshots.length - 1].governors;
 
+export interface KvKGovernor extends Governor {
+  honor: number;
+  contribution: number;
+  passesUsed: number;
+  ralliesJoined: number;
+  garrisonsJoined: number;
+  kvkKills: number;
+  kvkDeaths: number;
+}
+
+function generateKvKGovernors(dateSeed: number): KvKGovernor[] {
+  const govs = generateGovernors(dateSeed);
+  const rng = seed(dateSeed + 999);
+  return govs.map((g) => {
+    const r = () => rng();
+    return {
+      ...g,
+      honor: Math.floor(r() * 50000000),
+      contribution: Math.floor(r() * 30000000),
+      passesUsed: Math.floor(r() * 80),
+      ralliesJoined: Math.floor(r() * 200),
+      garrisonsJoined: Math.floor(r() * 150),
+      kvkKills: Math.floor(r() * 3000000),
+      kvkDeaths: Math.floor(r() * 1500000),
+    };
+  });
+}
+
+export const kvkSnapshots = [
+  { id: 'kvk-1', date: '2026-01-20', label: 'KvK Season 3 - Week 1', governors: generateKvKGovernors(10) },
+  { id: 'kvk-2', date: '2026-02-03', label: 'KvK Season 3 - Week 3', governors: generateKvKGovernors(20) },
+  { id: 'kvk-3', date: '2026-02-17', label: 'KvK Season 3 - Week 5', governors: generateKvKGovernors(30) },
+];
+
+export const currentKvKGovernors = kvkSnapshots[kvkSnapshots.length - 1].governors;
+
 export const kingdomInfo = {
   number: 1942,
   name: 'Kingdom of Valoria',

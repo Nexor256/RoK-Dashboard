@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, TableProperties, BarChart3, History, Crown } from "lucide-react";
+import { LayoutDashboard, TableProperties, BarChart3, History, Crown, Swords } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -7,6 +7,7 @@ const navItems = [
   { to: "/rankings", label: "Rankings", icon: TableProperties },
   { to: "/charts", label: "Charts", icon: BarChart3 },
   { to: "/snapshots", label: "Snapshots", icon: History },
+  { to: "/kvk", label: "KvK", icon: Swords },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
