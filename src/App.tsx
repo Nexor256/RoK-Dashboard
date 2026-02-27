@@ -9,6 +9,7 @@ import RankingsPage from "@/pages/RankingsPage";
 import ChartsPage from "@/pages/ChartsPage";
 import SnapshotsPage from "@/pages/SnapshotsPage";
 import KvKPage from "@/pages/KvKPage";
+import UploadPage from "@/pages/UploadPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
             <Route path="/charts" element={<ChartsPage />} />
             <Route path="/snapshots" element={<SnapshotsPage />} />
             <Route path="/kvk" element={<KvKPage />} />
+            <Route path="/upload" element={<UploadPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AppLayout>
