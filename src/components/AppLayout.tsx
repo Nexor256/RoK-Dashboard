@@ -1,20 +1,24 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, TableProperties, BarChart3, History, Crown, Swords, Upload, LogOut } from "lucide-react";
+import { LayoutDashboard, TableProperties, BarChart3, History, Crown, Swords, Upload, LogOut, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
 const navItems = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
   { to: "/rankings", label: "Rankings", icon: TableProperties },
   { to: "/charts", label: "Charts", icon: BarChart3 },
   { to: "/snapshots", label: "Snapshots", icon: History },
   { to: "/kvk", label: "KvK", icon: Swords },
-  { to: "/upload", label: "Upload", icon: Upload },
+  { to: "/upload", label: "Upload", icon: Upload, adminOnly: true },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();
-  const { signOut, user } = useAuth();
+  const { signOut, profile, isAdmin } = useAuth();
+
+  const visibleItems = navItems.filter((item) => !item.adminOnly || isAdmin);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -26,7 +30,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </span>
         </div>
         <nav className="flex items-center gap-1">
-          {navItems.map((item) => (
+          {visibleItems.map((item) => (
             <Link
               key={item.to}
               to={item.to}
@@ -41,8 +45,28 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               {item.label}
             </Link>
           ))}
+          {isAdmin && (
+            <Link
+              to="/manage-users"
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors",
+                pathname === "/manage-users"
+                  ? "bg-primary/15 text-primary"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+              )}
+            >
+              <Shield className="h-4 w-4" />
+              Users
+            </Link>
+          )}
           <div className="ml-2 pl-2 border-l border-border flex items-center gap-2">
-            <span className="text-xs text-muted-foreground hidden lg:inline">{user?.email}</span>
+            <Avatar className="h-7 w-7">
+              <AvatarImage src={profile?.avatar_url || ""} />
+              <AvatarFallback className="text-xs">{profile?.display_name?.[0]?.toUpperCase() || "?"}</AvatarFallback>
+            </Avatar>
+            <span className="text-xs text-muted-foreground hidden lg:inline">
+              {profile?.display_name || "Admin"}
+            </span>
             <Button variant="ghost" size="sm" onClick={signOut} className="text-muted-foreground hover:text-foreground">
               <LogOut className="h-4 w-4" />
             </Button>
