@@ -1,7 +1,8 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, TableProperties, BarChart3, History, Crown, Swords, Upload } from "lucide-react";
+import { LayoutDashboard, TableProperties, BarChart3, History, Crown, Swords, Upload, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
-
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
 const navItems = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
   { to: "/rankings", label: "Rankings", icon: TableProperties },
@@ -13,6 +14,7 @@ const navItems = [
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();
+  const { signOut, user } = useAuth();
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -39,6 +41,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               {item.label}
             </Link>
           ))}
+          <div className="ml-2 pl-2 border-l border-border flex items-center gap-2">
+            <span className="text-xs text-muted-foreground hidden lg:inline">{user?.email}</span>
+            <Button variant="ghost" size="sm" onClick={signOut} className="text-muted-foreground hover:text-foreground">
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
         </nav>
       </header>
       <main className="flex-1 p-6">{children}</main>
