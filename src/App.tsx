@@ -11,6 +11,7 @@ import ChartsPage from "@/pages/ChartsPage";
 import SnapshotsPage from "@/pages/SnapshotsPage";
 import KvKPage from "@/pages/KvKPage";
 import UploadPage from "@/pages/UploadPage";
+import ManageUsersPage from "@/pages/ManageUsersPage";
 import AuthPage from "@/pages/AuthPage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import NotFound from "./pages/NotFound";
@@ -19,7 +20,7 @@ import { Loader2 } from "lucide-react";
 const queryClient = new QueryClient();
 
 function ProtectedRoutes() {
-  const { user, loading } = useAuth();
+  const { user, loading, isAdmin } = useAuth();
 
   if (loading) {
     return (
@@ -39,7 +40,8 @@ function ProtectedRoutes() {
         <Route path="/charts" element={<ChartsPage />} />
         <Route path="/snapshots" element={<SnapshotsPage />} />
         <Route path="/kvk" element={<KvKPage />} />
-        <Route path="/upload" element={<UploadPage />} />
+        <Route path="/upload" element={isAdmin ? <UploadPage /> : <Navigate to="/" replace />} />
+        <Route path="/manage-users" element={isAdmin ? <ManageUsersPage /> : <Navigate to="/" replace />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </AppLayout>
