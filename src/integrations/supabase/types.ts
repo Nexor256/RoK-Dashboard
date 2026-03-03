@@ -71,40 +71,31 @@ export type Database = {
         Row: {
           alliance: string | null
           contribution: number | null
-          garrisons_joined: number | null
           governor_name: string
           honor: number | null
           id: string
           kvk_deaths: number | null
           kvk_kills: number | null
-          passes_used: number | null
-          rallies_joined: number | null
           snapshot_id: string
         }
         Insert: {
           alliance?: string | null
           contribution?: number | null
-          garrisons_joined?: number | null
           governor_name: string
           honor?: number | null
           id?: string
           kvk_deaths?: number | null
           kvk_kills?: number | null
-          passes_used?: number | null
-          rallies_joined?: number | null
           snapshot_id: string
         }
         Update: {
           alliance?: string | null
           contribution?: number | null
-          garrisons_joined?: number | null
           governor_name?: string
           honor?: number | null
           id?: string
           kvk_deaths?: number | null
           kvk_kills?: number | null
-          passes_used?: number | null
-          rallies_joined?: number | null
           snapshot_id?: string
         }
         Relationships: [

@@ -67,8 +67,8 @@ export default function KvKPage() {
     return {
       honor: governors.reduce((s, g) => s + g.honor, 0),
       contribution: governors.reduce((s, g) => s + g.contribution, 0),
-      passes: governors.reduce((s, g) => s + g.passesUsed, 0),
       kvkKills: governors.reduce((s, g) => s + g.kvkKills, 0),
+      kvkDeaths: governors.reduce((s, g) => s + g.kvkDeaths, 0),
     };
   }, [governors]);
 
@@ -141,17 +141,17 @@ export default function KvKPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Passes Used</CardTitle>
-            <Shield className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent><div className="text-2xl font-bold font-display">{totals.passes}</div></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">KvK Kills</CardTitle>
             <Swords className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent><div className="text-2xl font-bold font-display">{fmt(totals.kvkKills)}</div></CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">KvK Deaths</CardTitle>
+            <Shield className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent><div className="text-2xl font-bold font-display">{fmt(totals.kvkDeaths)}</div></CardContent>
         </Card>
       </div>
 
@@ -218,9 +218,6 @@ export default function KvKPage() {
                   <TableHead>Alliance</TableHead>
                   {sortableHead("Honor", "honor")}
                   {sortableHead("Contribution", "contribution")}
-                  {sortableHead("Passes", "passesUsed")}
-                  {sortableHead("Rallies", "ralliesJoined")}
-                  {sortableHead("Garrisons", "garrisonsJoined")}
                   {sortableHead("KvK Kills", "kvkKills")}
                   {sortableHead("KvK Deaths", "kvkDeaths")}
                 </TableRow>
@@ -233,9 +230,6 @@ export default function KvKPage() {
                     <TableCell className="text-primary">{g.alliance}</TableCell>
                     <TableCell>{fmt(g.honor)}</TableCell>
                     <TableCell>{fmt(g.contribution)}</TableCell>
-                    <TableCell>{g.passesUsed}</TableCell>
-                    <TableCell>{g.ralliesJoined}</TableCell>
-                    <TableCell>{g.garrisonsJoined}</TableCell>
                     <TableCell>{fmt(g.kvkKills)}</TableCell>
                     <TableCell>{fmt(g.kvkDeaths)}</TableCell>
                   </TableRow>
