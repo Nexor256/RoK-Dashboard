@@ -1,117 +1,158 @@
-import { currentGovernors, calcDKP, snapshots } from "@/data/governors";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
-  LineChart, Line, Legend,
+  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
+  AreaChart, Area, Legend,
 } from "recharts";
 
 function fmt(n: number) {
+  if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(1) + "B";
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
   if (n >= 1_000) return (n / 1_000).toFixed(0) + "K";
   return n.toString();
 }
 
+interface KingdomPoint {
+  date: string;
+  label: string;
+  totalPower: number;
+  totalT4Kills: number;
+  totalT5Kills: number;
+  totalDeaths: number;
+  totalDeadTroops: number;
+  totalHealed: number;
+  totalResourceGathered: number;
+  governorCount: number;
+}
+
+const chartStyle = {
+  grid: "hsl(220, 15%, 22%)",
+  tick: { fill: "hsl(215, 15%, 55%)", fontSize: 11 },
+  tooltip: {
+    background: "hsl(220, 20%, 13%)",
+    border: "1px solid hsl(220, 15%, 22%)",
+    borderRadius: 8,
+    color: "hsl(210, 20%, 92%)",
+  },
+};
+
 export default function ChartsPage() {
-  const sorted = [...currentGovernors].sort((a, b) => b.power - a.power);
+  const [data, setData] = useState<KingdomPoint[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const powerData = sorted.slice(0, 10).map((g) => ({
-    name: g.name,
-    power: g.power,
-  }));
+  useEffect(() => {
+    async function load() {
+      const { data: snapshots } = await supabase
+        .from("snapshots")
+        .select("id, snapshot_date, label, snapshot_type")
+        .eq("snapshot_type", "general")
+        .order("snapshot_date", { ascending: true });
 
-  const killsData = sorted.slice(0, 10).map((g) => ({
-    name: g.name,
-    t4: g.t4Kills,
-    t5: g.t5Kills,
-  }));
+      if (!snapshots?.length) { setLoading(false); return; }
 
-  const dkpData = [...currentGovernors]
-    .sort((a, b) => calcDKP(b) - calcDKP(a))
-    .slice(0, 10)
-    .map((g) => ({ name: g.name, dkp: calcDKP(g) }));
+      const { data: stats } = await supabase
+        .from("governor_stats")
+        .select("snapshot_id, power, t4_kills, t5_kills, deaths, dead_troops, healed, resource_gathered")
+        .in("snapshot_id", snapshots.map(s => s.id));
 
-  // Growth over time: pick top 5 governors and show their power across snapshots
-  const top5 = sorted.slice(0, 5).map((g) => g.id);
-  const growthData = snapshots.map((snap) => {
-    const entry: any = { date: snap.date };
-    snap.governors.forEach((g) => {
-      if (top5.includes(g.id)) entry[g.name] = g.power;
-    });
-    return entry;
-  });
-  const top5Names = sorted.slice(0, 5).map((g) => g.name);
-  const lineColors = ["hsl(45, 100%, 55%)", "hsl(200, 80%, 50%)", "hsl(150, 60%, 45%)", "hsl(0, 72%, 55%)", "hsl(280, 60%, 55%)"];
+      const points: KingdomPoint[] = snapshots.map(snap => {
+        const rows = (stats || []).filter(s => s.snapshot_id === snap.id);
+        return {
+          date: snap.snapshot_date,
+          label: snap.label || snap.snapshot_date,
+          totalPower: rows.reduce((s, r) => s + (r.power || 0), 0),
+          totalT4Kills: rows.reduce((s, r) => s + (r.t4_kills || 0), 0),
+          totalT5Kills: rows.reduce((s, r) => s + (r.t5_kills || 0), 0),
+          totalDeaths: rows.reduce((s, r) => s + (r.deaths || 0), 0),
+          totalDeadTroops: rows.reduce((s, r) => s + (r.dead_troops || 0), 0),
+          totalHealed: rows.reduce((s, r) => s + (r.healed || 0), 0),
+          totalResourceGathered: rows.reduce((s, r) => s + (r.resource_gathered || 0), 0),
+          governorCount: rows.length,
+        };
+      });
+
+      setData(points);
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  if (loading) return <div className="flex items-center justify-center h-64 text-muted-foreground">Loading...</div>;
+  if (!data.length) return <div className="flex items-center justify-center h-64 text-muted-foreground">No snapshot data yet. Upload snapshots to see kingdom trends.</div>;
 
   return (
     <div className="space-y-6">
-      <h1 className="font-display text-3xl font-bold">Charts & Analytics</h1>
+      <h1 className="font-display text-3xl font-bold">Kingdom Overview</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Power Distribution */}
+        {/* Total Power Over Time */}
         <Card className="bg-card border-border">
-          <CardHeader><CardTitle className="font-display text-lg">Power Distribution (Top 10)</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="font-display text-lg">Total Kingdom Power</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={powerData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 15%, 22%)" />
-                <XAxis dataKey="name" tick={{ fill: "hsl(215, 15%, 55%)", fontSize: 11 }} angle={-30} textAnchor="end" height={60} />
-                <YAxis tickFormatter={fmt} tick={{ fill: "hsl(215, 15%, 55%)", fontSize: 11 }} />
-                <Tooltip contentStyle={{ background: "hsl(220, 20%, 13%)", border: "1px solid hsl(220, 15%, 22%)", borderRadius: 8, color: "hsl(210, 20%, 92%)" }} formatter={(v: number) => fmt(v)} />
-                <Bar dataKey="power" fill="hsl(45, 100%, 55%)" radius={[4, 4, 0, 0]} />
-              </BarChart>
+              <AreaChart data={data}>
+                <CartesianGrid strokeDasharray="3 3" stroke={chartStyle.grid} />
+                <XAxis dataKey="date" tick={chartStyle.tick} />
+                <YAxis tickFormatter={fmt} tick={chartStyle.tick} />
+                <Tooltip contentStyle={chartStyle.tooltip} formatter={(v: number) => fmt(v)} />
+                <Area type="monotone" dataKey="totalPower" name="Total Power" stroke="hsl(45, 100%, 55%)" fill="hsl(45, 100%, 55%)" fillOpacity={0.15} strokeWidth={2} />
+              </AreaChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        {/* Kill Points Breakdown */}
+        {/* Kill Points Over Time */}
         <Card className="bg-card border-border">
-          <CardHeader><CardTitle className="font-display text-lg">Kill Points Breakdown (Top 10)</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="font-display text-lg">Kingdom Kill Points</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={killsData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 15%, 22%)" />
-                <XAxis dataKey="name" tick={{ fill: "hsl(215, 15%, 55%)", fontSize: 11 }} angle={-30} textAnchor="end" height={60} />
-                <YAxis tickFormatter={fmt} tick={{ fill: "hsl(215, 15%, 55%)", fontSize: 11 }} />
-                <Tooltip contentStyle={{ background: "hsl(220, 20%, 13%)", border: "1px solid hsl(220, 15%, 22%)", borderRadius: 8, color: "hsl(210, 20%, 92%)" }} formatter={(v: number) => fmt(v)} />
+              <LineChart data={data}>
+                <CartesianGrid strokeDasharray="3 3" stroke={chartStyle.grid} />
+                <XAxis dataKey="date" tick={chartStyle.tick} />
+                <YAxis tickFormatter={fmt} tick={chartStyle.tick} />
+                <Tooltip contentStyle={chartStyle.tooltip} formatter={(v: number) => fmt(v)} />
                 <Legend wrapperStyle={{ color: "hsl(210, 20%, 85%)" }} />
-                <Bar dataKey="t4" name="T4 Kills" fill="hsl(200, 80%, 50%)" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="t5" name="T5 Kills" fill="hsl(0, 72%, 55%)" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* DKP Leaderboard */}
-        <Card className="bg-card border-border">
-          <CardHeader><CardTitle className="font-display text-lg">DKP Leaderboard (Top 10)</CardTitle></CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={dkpData} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 15%, 22%)" />
-                <XAxis type="number" tickFormatter={fmt} tick={{ fill: "hsl(215, 15%, 55%)", fontSize: 11 }} />
-                <YAxis dataKey="name" type="category" tick={{ fill: "hsl(215, 15%, 55%)", fontSize: 11 }} width={100} />
-                <Tooltip contentStyle={{ background: "hsl(220, 20%, 13%)", border: "1px solid hsl(220, 15%, 22%)", borderRadius: 8, color: "hsl(210, 20%, 92%)" }} formatter={(v: number) => fmt(v)} />
-                <Bar dataKey="dkp" fill="hsl(35, 90%, 55%)" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Growth Over Time */}
-        <Card className="bg-card border-border">
-          <CardHeader><CardTitle className="font-display text-lg">Power Growth (Top 5)</CardTitle></CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={growthData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 15%, 22%)" />
-                <XAxis dataKey="date" tick={{ fill: "hsl(215, 15%, 55%)", fontSize: 11 }} />
-                <YAxis tickFormatter={fmt} tick={{ fill: "hsl(215, 15%, 55%)", fontSize: 11 }} />
-                <Tooltip contentStyle={{ background: "hsl(220, 20%, 13%)", border: "1px solid hsl(220, 15%, 22%)", borderRadius: 8, color: "hsl(210, 20%, 92%)" }} formatter={(v: number) => fmt(v)} />
-                <Legend wrapperStyle={{ color: "hsl(210, 20%, 85%)" }} />
-                {top5Names.map((name, i) => (
-                  <Line key={name} type="monotone" dataKey={name} stroke={lineColors[i]} strokeWidth={2} dot={{ fill: lineColors[i] }} />
-                ))}
+                <Line type="monotone" dataKey="totalT4Kills" name="T4 Kills" stroke="hsl(200, 80%, 50%)" strokeWidth={2} dot={{ fill: "hsl(200, 80%, 50%)" }} />
+                <Line type="monotone" dataKey="totalT5Kills" name="T5 Kills" stroke="hsl(0, 72%, 55%)" strokeWidth={2} dot={{ fill: "hsl(0, 72%, 55%)" }} />
               </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Deaths & Healing Over Time */}
+        <Card className="bg-card border-border">
+          <CardHeader><CardTitle className="font-display text-lg">Deaths & Healing</CardTitle></CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={data}>
+                <CartesianGrid strokeDasharray="3 3" stroke={chartStyle.grid} />
+                <XAxis dataKey="date" tick={chartStyle.tick} />
+                <YAxis tickFormatter={fmt} tick={chartStyle.tick} />
+                <Tooltip contentStyle={chartStyle.tooltip} formatter={(v: number) => fmt(v)} />
+                <Legend wrapperStyle={{ color: "hsl(210, 20%, 85%)" }} />
+                <Line type="monotone" dataKey="totalDeaths" name="Deaths" stroke="hsl(0, 72%, 55%)" strokeWidth={2} dot={{ fill: "hsl(0, 72%, 55%)" }} />
+                <Line type="monotone" dataKey="totalDeadTroops" name="Dead Troops" stroke="hsl(30, 90%, 55%)" strokeWidth={2} dot={{ fill: "hsl(30, 90%, 55%)" }} />
+                <Line type="monotone" dataKey="totalHealed" name="Healed" stroke="hsl(150, 60%, 45%)" strokeWidth={2} dot={{ fill: "hsl(150, 60%, 45%)" }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Resources & Governor Count */}
+        <Card className="bg-card border-border">
+          <CardHeader><CardTitle className="font-display text-lg">Resources Gathered & Governors</CardTitle></CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <AreaChart data={data}>
+                <CartesianGrid strokeDasharray="3 3" stroke={chartStyle.grid} />
+                <XAxis dataKey="date" tick={chartStyle.tick} />
+                <YAxis tickFormatter={fmt} tick={chartStyle.tick} />
+                <Tooltip contentStyle={chartStyle.tooltip} formatter={(v: number) => fmt(v)} />
+                <Legend wrapperStyle={{ color: "hsl(210, 20%, 85%)" }} />
+                <Area type="monotone" dataKey="totalResourceGathered" name="Resources Gathered" stroke="hsl(280, 60%, 55%)" fill="hsl(280, 60%, 55%)" fillOpacity={0.15} strokeWidth={2} />
+                <Area type="monotone" dataKey="governorCount" name="Governor Count" stroke="hsl(45, 100%, 55%)" fill="hsl(45, 100%, 55%)" fillOpacity={0.1} strokeWidth={2} />
+              </AreaChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
