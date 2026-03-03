@@ -77,8 +77,6 @@ export const snapshots: Snapshot[] = [
 export const currentGovernors = snapshots[snapshots.length - 1].governors;
 
 export interface KvKGovernor extends Governor {
-  honor: number;
-  contribution: number;
   kvkKills: number;
   kvkDeaths: number;
 }
@@ -90,8 +88,6 @@ function generateKvKGovernors(dateSeed: number): KvKGovernor[] {
     const r = () => rng();
     return {
       ...g,
-      honor: Math.floor(r() * 50000000),
-      contribution: Math.floor(r() * 30000000),
       kvkKills: Math.floor(r() * 3000000),
       kvkDeaths: Math.floor(r() * 1500000),
     };
