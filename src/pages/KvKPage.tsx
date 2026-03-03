@@ -16,8 +16,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { currentKvKGovernors, kvkSnapshots, type KvKGovernor } from "@/data/governors";
-import { Swords, Trophy, Flag, Shield, ArrowUpDown, Search } from "lucide-react";
+import { currentKvKGovernors, kvkSnapshots, calcDKP, type KvKGovernor } from "@/data/governors";
+import { Swords, Trophy, Shield, ArrowUpDown, Search, Star } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -41,7 +41,7 @@ export default function KvKPage() {
   const [search, setSearch] = useState("");
   const [alliance, setAlliance] = useState("all");
   const [snapshot, setSnapshot] = useState(kvkSnapshots[kvkSnapshots.length - 1].id);
-  const [sortKey, setSortKey] = useState<SortKey>("honor");
+  const [sortKey, setSortKey] = useState<SortKey>("kvkKills");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   const governors = useMemo(() => {
@@ -65,8 +65,7 @@ export default function KvKPage() {
 
   const totals = useMemo(() => {
     return {
-      honor: governors.reduce((s, g) => s + g.honor, 0),
-      contribution: governors.reduce((s, g) => s + g.contribution, 0),
+      kvkPoints: governors.reduce((s, g) => s + calcDKP(g), 0),
       kvkKills: governors.reduce((s, g) => s + g.kvkKills, 0),
       kvkDeaths: governors.reduce((s, g) => s + g.kvkDeaths, 0),
     };
@@ -74,12 +73,11 @@ export default function KvKPage() {
 
   const chartData = useMemo(() => {
     return [...governors]
-      .sort((a, b) => b.honor - a.honor)
+      .sort((a, b) => calcDKP(b) - calcDKP(a))
       .slice(0, 10)
       .map((g) => ({
         name: g.name,
-        honor: g.honor,
-        contribution: g.contribution,
+        kvkPoints: calcDKP(g),
         kvkKills: g.kvkKills,
       }));
   }, [governors]);
@@ -124,20 +122,13 @@ export default function KvKPage() {
       </Select>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Honor</CardTitle>
-            <Trophy className="h-4 w-4 text-primary" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total KvK Points</CardTitle>
+            <Star className="h-4 w-4 text-primary" />
           </CardHeader>
-          <CardContent><div className="text-2xl font-bold font-display">{fmt(totals.honor)}</div></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Contribution</CardTitle>
-            <Flag className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent><div className="text-2xl font-bold font-display">{fmt(totals.contribution)}</div></CardContent>
+          <CardContent><div className="text-2xl font-bold font-display">{fmt(totals.kvkPoints)}</div></CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -158,7 +149,7 @@ export default function KvKPage() {
       {/* Chart */}
       <Card>
         <CardHeader>
-          <CardTitle>Top 10 by Honor</CardTitle>
+          <CardTitle>Top 10 by KvK Points</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="h-[350px]">
@@ -174,8 +165,8 @@ export default function KvKPage() {
                   itemStyle={{ color: "hsl(var(--foreground))" }}
                 />
                 <Legend />
-                <Bar dataKey="honor" fill="hsl(var(--primary))" name="Honor" radius={[0, 4, 4, 0]} />
-                <Bar dataKey="contribution" fill="hsl(var(--accent))" name="Contribution" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="kvkPoints" fill="hsl(var(--primary))" name="KvK Points" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="kvkKills" fill="hsl(var(--accent))" name="KvK Kills" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -216,8 +207,7 @@ export default function KvKPage() {
                   <TableHead className="w-10">#</TableHead>
                   <TableHead>Governor</TableHead>
                   <TableHead>Alliance</TableHead>
-                  {sortableHead("Honor", "honor")}
-                  {sortableHead("Contribution", "contribution")}
+                  {sortableHead("KvK Points", "t4Kills")}
                   {sortableHead("KvK Kills", "kvkKills")}
                   {sortableHead("KvK Deaths", "kvkDeaths")}
                 </TableRow>
@@ -228,8 +218,7 @@ export default function KvKPage() {
                     <TableCell className="text-muted-foreground">{i + 1}</TableCell>
                     <TableCell className="font-medium">{g.name}</TableCell>
                     <TableCell className="text-primary">{g.alliance}</TableCell>
-                    <TableCell>{fmt(g.honor)}</TableCell>
-                    <TableCell>{fmt(g.contribution)}</TableCell>
+                    <TableCell className="font-semibold text-primary">{fmt(calcDKP(g))}</TableCell>
                     <TableCell>{fmt(g.kvkKills)}</TableCell>
                     <TableCell>{fmt(g.kvkDeaths)}</TableCell>
                   </TableRow>

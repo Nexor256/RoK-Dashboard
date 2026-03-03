@@ -70,9 +70,7 @@ export type Database = {
       kvk_stats: {
         Row: {
           alliance: string | null
-          contribution: number | null
           governor_name: string
-          honor: number | null
           id: string
           kvk_deaths: number | null
           kvk_kills: number | null
@@ -80,9 +78,7 @@ export type Database = {
         }
         Insert: {
           alliance?: string | null
-          contribution?: number | null
           governor_name: string
-          honor?: number | null
           id?: string
           kvk_deaths?: number | null
           kvk_kills?: number | null
@@ -90,9 +86,7 @@ export type Database = {
         }
         Update: {
           alliance?: string | null
-          contribution?: number | null
           governor_name?: string
-          honor?: number | null
           id?: string
           kvk_deaths?: number | null
           kvk_kills?: number | null
