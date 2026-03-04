@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import AppLayout from "@/components/AppLayout";
 import { Loader2 } from "lucide-react";
 import { lazy, Suspense } from "react";
+import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 
 const DashboardPage = lazy(() => import("@/pages/DashboardPage"));
@@ -82,6 +83,7 @@ const App = () => (
           </Suspense>
         </AuthProvider>
       </BrowserRouter>
+      <Analytics />
       <SpeedInsights />
     </TooltipProvider>
   </QueryClientProvider>
