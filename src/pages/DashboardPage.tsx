@@ -92,7 +92,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
       {/* Kingdom Header */}
-      <div className="flex items-end justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
         <div>
           {editing ? (
             <div className="flex items-center gap-2 mb-1">
@@ -130,7 +130,7 @@ export default function DashboardPage() {
               )}
             </div>
           )}
-          <h1 className="font-display text-4xl font-bold text-foreground">
+          <h1 className="font-display text-2xl sm:text-4xl font-bold text-foreground">
             Governor Dashboard
           </h1>
         </div>
@@ -142,7 +142,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
         {stats.map((s) => {
           const Icon = iconMap[s.label as keyof typeof iconMap];
           const color = colorMap[s.label] ?? "text-primary";
@@ -153,7 +153,7 @@ export default function DashboardPage() {
                   <span className="text-xs text-muted-foreground uppercase tracking-wider">{s.label}</span>
                   <Icon className={`h-4 w-4 ${color}`} />
                 </div>
-                <span className="font-display text-3xl font-bold text-foreground">{s.value}</span>
+                <span className="font-display text-xl sm:text-3xl font-bold text-foreground">{s.value}</span>
               </CardContent>
             </Card>
           );

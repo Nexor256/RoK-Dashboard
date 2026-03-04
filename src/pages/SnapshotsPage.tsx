@@ -95,11 +95,11 @@ export default function SnapshotsPage() {
           <CardTitle className="font-display text-lg">Compare Snapshots</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap gap-4 items-center mb-6">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row flex-wrap gap-4 items-start sm:items-center mb-6">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
               <span className="text-sm text-muted-foreground">From:</span>
               <Select value={resolvedSnapA} onValueChange={setSnapA}>
-                <SelectTrigger className="w-[220px] bg-secondary border-border">
+                <SelectTrigger className="w-full sm:w-[220px] bg-secondary border-border">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -109,10 +109,10 @@ export default function SnapshotsPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
               <span className="text-sm text-muted-foreground">To:</span>
               <Select value={resolvedSnapB} onValueChange={setSnapB}>
-                <SelectTrigger className="w-[220px] bg-secondary border-border">
+                <SelectTrigger className="w-full sm:w-[220px] bg-secondary border-border">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -129,8 +129,8 @@ export default function SnapshotsPage() {
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <div className="rounded-lg border border-border overflow-hidden">
-              <Table>
+            <div className="rounded-lg border border-border overflow-x-auto">
+              <Table className="min-w-[800px]">
                 <TableHeader>
                   <TableRow className="bg-secondary/50 hover:bg-secondary/50">
                     <TableHead>Governor</TableHead>

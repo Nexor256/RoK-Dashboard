@@ -125,7 +125,7 @@ export default function KvKPage() {
 
       {/* Snapshot selector */}
       <Select value={resolvedSnapshotId} onValueChange={setSnapshotId}>
-        <SelectTrigger className="w-72">
+        <SelectTrigger className="w-full sm:w-72">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -203,7 +203,7 @@ export default function KvKPage() {
                 placeholder="Search governor..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 w-64"
+                className="pl-9 w-full sm:w-64"
               />
             </div>
             <Select value={alliance} onValueChange={setAlliance}>

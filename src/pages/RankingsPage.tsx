@@ -116,11 +116,11 @@ export default function RankingsPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="font-display text-3xl font-bold">Governor Rankings</h1>
+      <h1 className="font-display text-2xl sm:text-3xl font-bold">Governor Rankings</h1>
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 items-center">
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
+        <div className="relative w-full sm:flex-1 sm:min-w-[200px] sm:max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search governor..."
@@ -156,8 +156,8 @@ export default function RankingsPage() {
       </div>
 
       {/* Table */}
-      <div className="rounded-lg border border-border overflow-hidden">
-        <Table>
+      <div className="rounded-lg border border-border overflow-x-auto">
+        <Table className="min-w-[900px]">
           <TableHeader>
             <TableRow className="bg-secondary/50 hover:bg-secondary/50">
               <TableHead className="w-10 text-center">#</TableHead>
@@ -238,7 +238,7 @@ export default function RankingsPage() {
       </Dialog>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between text-sm text-muted-foreground">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-sm text-muted-foreground">
         <span>Showing {page * perPage + 1}–{Math.min((page + 1) * perPage, filtered.length)} of {filtered.length}</span>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(page - 1)}>
