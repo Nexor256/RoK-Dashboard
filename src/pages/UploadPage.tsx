@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,59 +19,23 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
-import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2, Trash2 } from "lucide-react";
+import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2, Trash2, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { parseCSV, normalizeHeaders, type ParsedRow } from "@/lib/csv";
 
 type UploadType = "general" | "kvk";
 
-interface ParsedRow {
-  [key: string]: string;
-}
-
 const GENERAL_COLUMNS = [
-  "governor_name", "alliance", "power", "t4_kills", "t5_kills",
-  "deaths", "dead_troops", "healed", "resource_gathered", "power_growth",
+  "governor_id", "governor_name", "alliance", "power",
+  "t1_kills", "t2_kills", "t3_kills", "t4_kills", "t5_kills",
+  "total_kills", "t45_kills", "killpoints",
+  "deaths", "ranged", "resource_gathered", "rss_assistance",
+  "helps", "city_hall_level",
 ];
 
 const KVK_COLUMNS = [
-  "governor_name", "alliance", "honor", "contribution", "passes_used",
-  "rallies_joined", "garrisons_joined", "kvk_kills", "kvk_deaths",
+  "governor_name", "alliance", "kvk_kills", "kvk_deaths",
 ];
-
-function parseCSV(text: string): ParsedRow[] {
-  const lines = text.trim().split("\n");
-  if (lines.length < 2) return [];
-  const headers = lines[0].split(",").map((h) => h.trim().toLowerCase().replace(/\s+/g, "_"));
-  return lines.slice(1).filter(l => l.trim()).map((line) => {
-    const values = line.split(",").map((v) => v.trim());
-    const row: ParsedRow = {};
-    headers.forEach((h, i) => {
-      row[h] = values[i] || "";
-    });
-    return row;
-  });
-}
-
-function normalizeHeaders(rows: ParsedRow[], expectedCols: string[]): ParsedRow[] {
-  // Try to map common header variations
-  const headerMap: Record<string, string> = {
-    name: "governor_name", governor: "governor_name", gov_name: "governor_name",
-    t4kills: "t4_kills", t4: "t4_kills", t5kills: "t5_kills", t5: "t5_kills",
-    dead: "dead_troops", dead_troop: "dead_troops",
-    resource: "resource_gathered", resources: "resource_gathered",
-    growth: "power_growth", passes: "passes_used", rallies: "rallies_joined",
-    garrisons: "garrisons_joined", kvk_kill: "kvk_kills", kvk_death: "kvk_deaths",
-  };
-
-  return rows.map((row) => {
-    const normalized: ParsedRow = {};
-    for (const [key, value] of Object.entries(row)) {
-      const mapped = headerMap[key] || key;
-      normalized[mapped] = value;
-    }
-    return normalized;
-  });
-}
 
 export default function UploadPage() {
   const [uploadType, setUploadType] = useState<UploadType>("general");
@@ -85,6 +49,35 @@ export default function UploadPage() {
 
   const expectedColumns = uploadType === "general" ? GENERAL_COLUMNS : KVK_COLUMNS;
 
+  // Validate parsed data
+  const warnings = useMemo(() => {
+    if (!parsedData.length) return [];
+    const w: string[] = [];
+
+    // Check for missing required columns
+    const required = uploadType === "general" ? ["governor_name"] : ["governor_name"];
+    const sampleKeys = Object.keys(parsedData[0]);
+    const missing = expectedColumns.filter((c) => !sampleKeys.includes(c));
+    if (missing.length) w.push(`Missing columns: ${missing.join(", ")}`);
+
+    // Check for required fields being empty
+    const emptyNames = parsedData.filter((r) => !r.governor_name?.trim()).length;
+    if (emptyNames) w.push(`${emptyNames} row(s) have empty governor name`);
+
+    // Check for non-numeric values in numeric columns
+    const numericCols = expectedColumns.filter((c) => !["governor_id", "governor_name", "alliance"].includes(c));
+    let badValues = 0;
+    for (const row of parsedData.slice(0, 50)) {
+      for (const col of numericCols) {
+        const val = row[col];
+        if (val && val.trim() && isNaN(Number(val))) badValues++;
+      }
+    }
+    if (badValues) w.push(`${badValues} non-numeric value(s) detected in numeric columns (checked first 50 rows)`);
+
+    return w;
+  }, [parsedData, expectedColumns, uploadType]);
+
   const handleFileChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       setUploadResult(null);
@@ -95,7 +88,7 @@ export default function UploadPage() {
       reader.onload = (ev) => {
         const text = ev.target?.result as string;
         const rows = parseCSV(text);
-        const normalized = normalizeHeaders(rows, expectedColumns);
+        const normalized = normalizeHeaders(rows);
         setParsedData(normalized);
       };
       reader.readAsText(file);
@@ -134,16 +127,24 @@ export default function UploadPage() {
       if (uploadType === "general") {
         const rows = parsedData.map((row) => ({
           snapshot_id: snapshot.id,
+          governor_id: row.governor_id || null,
           governor_name: row.governor_name || "",
           alliance: row.alliance || "",
           power: parseInt(row.power || "0", 10) || 0,
+          t1_kills: parseInt(row.t1_kills || "0", 10) || 0,
+          t2_kills: parseInt(row.t2_kills || "0", 10) || 0,
+          t3_kills: parseInt(row.t3_kills || "0", 10) || 0,
           t4_kills: parseInt(row.t4_kills || "0", 10) || 0,
           t5_kills: parseInt(row.t5_kills || "0", 10) || 0,
+          total_kills: parseInt(row.total_kills || "0", 10) || 0,
+          t45_kills: parseInt(row.t45_kills || "0", 10) || 0,
+          killpoints: parseInt(row.killpoints || "0", 10) || 0,
           deaths: parseInt(row.deaths || "0", 10) || 0,
-          dead_troops: parseInt(row.dead_troops || "0", 10) || 0,
-          healed: parseInt(row.healed || "0", 10) || 0,
+          ranged: parseInt(row.ranged || "0", 10) || 0,
           resource_gathered: parseInt(row.resource_gathered || "0", 10) || 0,
-          power_growth: parseInt(row.power_growth || "0", 10) || 0,
+          rss_assistance: parseInt(row.rss_assistance || "0", 10) || 0,
+          helps: parseInt(row.helps || "0", 10) || 0,
+          city_hall_level: parseInt(row.city_hall_level || "0", 10) || 0,
         }));
         const { error: insertError } = await supabase.from("governor_stats").insert(rows);
         if (insertError) throw insertError;
@@ -152,17 +153,11 @@ export default function UploadPage() {
           snapshot_id: snapshot.id,
           governor_name: row.governor_name || "",
           alliance: row.alliance || "",
-          honor: parseInt(row.honor || "0", 10) || 0,
-          contribution: parseInt(row.contribution || "0", 10) || 0,
-          passes_used: parseInt(row.passes_used || "0", 10) || 0,
-          rallies_joined: parseInt(row.rallies_joined || "0", 10) || 0,
-          garrisons_joined: parseInt(row.garrisons_joined || "0", 10) || 0,
           kvk_kills: parseInt(row.kvk_kills || "0", 10) || 0,
           kvk_deaths: parseInt(row.kvk_deaths || "0", 10) || 0,
         }));
         const { error: insertError } = await supabase.from("kvk_stats").insert(rows);
         if (insertError) throw insertError;
-        
       }
 
       setUploadResult({
@@ -256,6 +251,17 @@ export default function UploadPage() {
                 <Button variant="ghost" size="sm" onClick={() => { setParsedData([]); setFileName(""); }}>
                   <Trash2 className="h-4 w-4 mr-1" /> Clear
                 </Button>
+              </div>
+            )}
+
+            {warnings.length > 0 && (
+              <div className="rounded-md bg-yellow-500/10 border border-yellow-500/30 p-3 space-y-1">
+                {warnings.map((w, i) => (
+                  <p key={i} className="flex items-start gap-2 text-sm text-yellow-400">
+                    <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                    {w}
+                  </p>
+                ))}
               </div>
             )}
 

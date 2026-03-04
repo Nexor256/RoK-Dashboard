@@ -33,12 +33,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfileAndRole = async (userId: string) => {
+  const fetchProfileAndRole = async (userId: string, userEmail?: string, userMeta?: any) => {
     const [profileRes, roleRes] = await Promise.all([
       supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle(),
       supabase.from("user_roles").select("role").eq("user_id", userId).eq("role", "admin").maybeSingle(),
     ]);
-    setProfile((profileRes.data as Profile) || null);
+
+    let profileData = profileRes.data as Profile | null;
+
+    // Auto-create profile if it doesn't exist
+    if (!profileData) {
+      const displayName = userMeta?.display_name || userEmail?.split("@")[0] || "User";
+      const { data: newProfile } = await supabase
+        .from("profiles")
+        .insert({ user_id: userId, display_name: displayName })
+        .select()
+        .single();
+      profileData = (newProfile as Profile) || null;
+    }
+
+    setProfile(profileData);
+
+    // Auto-assign admin if no admins exist (first user becomes admin)
+    if (!roleRes.data) {
+      const { count } = await supabase
+        .from("user_roles")
+        .select("*", { count: "exact", head: true })
+        .eq("role", "admin");
+      if (count === 0) {
+        await supabase.from("user_roles").insert({ user_id: userId, role: "admin" });
+        setIsAdmin(true);
+        return;
+      }
+    }
     setIsAdmin(!!roleRes.data);
   };
 
@@ -47,7 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       (_event, session) => {
         setSession(session);
         if (session?.user) {
-          fetchProfileAndRole(session.user.id);
+          fetchProfileAndRole(session.user.id, session.user.email, session.user.user_metadata);
         } else {
           setProfile(null);
           setIsAdmin(false);
@@ -59,7 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session?.user) {
-        fetchProfileAndRole(session.user.id);
+        fetchProfileAndRole(session.user.id, session.user.email, session.user.user_metadata);
       }
       setLoading(false);
     });

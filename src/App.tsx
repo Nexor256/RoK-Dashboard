@@ -5,19 +5,27 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import AppLayout from "@/components/AppLayout";
-import DashboardPage from "@/pages/DashboardPage";
-import RankingsPage from "@/pages/RankingsPage";
-import ChartsPage from "@/pages/ChartsPage";
-import SnapshotsPage from "@/pages/SnapshotsPage";
-import KvKPage from "@/pages/KvKPage";
-import UploadPage from "@/pages/UploadPage";
-import ManageUsersPage from "@/pages/ManageUsersPage";
-import AuthPage from "@/pages/AuthPage";
-import ResetPasswordPage from "@/pages/ResetPasswordPage";
-import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
+import { lazy, Suspense } from "react";
+
+const DashboardPage = lazy(() => import("@/pages/DashboardPage"));
+const RankingsPage = lazy(() => import("@/pages/RankingsPage"));
+const ChartsPage = lazy(() => import("@/pages/ChartsPage"));
+const SnapshotsPage = lazy(() => import("@/pages/SnapshotsPage"));
+const KvKPage = lazy(() => import("@/pages/KvKPage"));
+const UploadPage = lazy(() => import("@/pages/UploadPage"));
+const ManageUsersPage = lazy(() => import("@/pages/ManageUsersPage"));
+const AuthPage = lazy(() => import("@/pages/AuthPage"));
+const ResetPasswordPage = lazy(() => import("@/pages/ResetPasswordPage"));
+const NotFound = lazy(() => import("@/pages/NotFound"));
 
 const queryClient = new QueryClient();
+
+const PageSpinner = () => (
+  <div className="flex items-center justify-center h-64">
+    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+  </div>
+);
 
 function ProtectedRoutes() {
   const { user, loading, isAdmin } = useAuth();
@@ -34,16 +42,18 @@ function ProtectedRoutes() {
 
   return (
     <AppLayout>
-      <Routes>
-        <Route path="/" element={<DashboardPage />} />
-        <Route path="/rankings" element={<RankingsPage />} />
-        <Route path="/charts" element={<ChartsPage />} />
-        <Route path="/snapshots" element={<SnapshotsPage />} />
-        <Route path="/kvk" element={<KvKPage />} />
-        <Route path="/upload" element={isAdmin ? <UploadPage /> : <Navigate to="/" replace />} />
-        <Route path="/manage-users" element={isAdmin ? <ManageUsersPage /> : <Navigate to="/" replace />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+      <Suspense fallback={<PageSpinner />}>
+        <Routes>
+          <Route path="/" element={<DashboardPage />} />
+          <Route path="/rankings" element={<RankingsPage />} />
+          <Route path="/charts" element={<ChartsPage />} />
+          <Route path="/snapshots" element={<SnapshotsPage />} />
+          <Route path="/kvk" element={<KvKPage />} />
+          <Route path="/upload" element={isAdmin ? <UploadPage /> : <Navigate to="/" replace />} />
+          <Route path="/manage-users" element={isAdmin ? <ManageUsersPage /> : <Navigate to="/" replace />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Suspense>
     </AppLayout>
   );
 }
@@ -62,11 +72,13 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            <Route path="/auth" element={<AuthGate />} />
-            <Route path="/reset-password" element={<ResetPasswordPage />} />
-            <Route path="/*" element={<ProtectedRoutes />} />
-          </Routes>
+          <Suspense fallback={<PageSpinner />}>
+            <Routes>
+              <Route path="/auth" element={<AuthGate />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/*" element={<ProtectedRoutes />} />
+            </Routes>
+          </Suspense>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

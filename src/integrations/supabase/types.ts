@@ -17,45 +17,78 @@ export type Database = {
       governor_stats: {
         Row: {
           alliance: string | null
+          city_hall_level: number | null
           dead_troops: number | null
           deaths: number | null
+          governor_id: string | null
           governor_name: string
           healed: number | null
+          helps: number | null
           id: string
+          killpoints: number | null
           power: number | null
           power_growth: number | null
+          ranged: number | null
           resource_gathered: number | null
+          rss_assistance: number | null
           snapshot_id: string
+          t1_kills: number | null
+          t2_kills: number | null
+          t3_kills: number | null
           t4_kills: number | null
+          t45_kills: number | null
           t5_kills: number | null
+          total_kills: number | null
         }
         Insert: {
           alliance?: string | null
+          city_hall_level?: number | null
           dead_troops?: number | null
           deaths?: number | null
+          governor_id?: string | null
           governor_name: string
           healed?: number | null
+          helps?: number | null
           id?: string
+          killpoints?: number | null
           power?: number | null
           power_growth?: number | null
+          ranged?: number | null
           resource_gathered?: number | null
+          rss_assistance?: number | null
           snapshot_id: string
+          t1_kills?: number | null
+          t2_kills?: number | null
+          t3_kills?: number | null
           t4_kills?: number | null
+          t45_kills?: number | null
           t5_kills?: number | null
+          total_kills?: number | null
         }
         Update: {
           alliance?: string | null
+          city_hall_level?: number | null
           dead_troops?: number | null
           deaths?: number | null
+          governor_id?: string | null
           governor_name?: string
           healed?: number | null
+          helps?: number | null
           id?: string
+          killpoints?: number | null
           power?: number | null
           power_growth?: number | null
+          ranged?: number | null
           resource_gathered?: number | null
+          rss_assistance?: number | null
           snapshot_id?: string
+          t1_kills?: number | null
+          t2_kills?: number | null
+          t3_kills?: number | null
           t4_kills?: number | null
+          t45_kills?: number | null
           t5_kills?: number | null
+          total_kills?: number | null
         }
         Relationships: [
           {

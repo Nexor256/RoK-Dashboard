@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,20 +26,17 @@ export default function ManageUsersPage() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
-  const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const { session } = useAuth();
+  const queryClient = useQueryClient();
 
-  const fetchProfiles = async () => {
-    const { data } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
-    setProfiles((data as Profile[]) || []);
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    fetchProfiles();
-  }, []);
+  const { data: profiles = [], isLoading: loading } = useQuery({
+    queryKey: ["profiles"],
+    queryFn: async () => {
+      const { data } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
+      return (data as Profile[]) || [];
+    },
+  });
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -79,7 +77,7 @@ export default function ManageUsersPage() {
       setDisplayName("");
       setAvatarFile(null);
       setAvatarPreview(null);
-      fetchProfiles();
+      queryClient.invalidateQueries({ queryKey: ["profiles"] });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Failed to create user";
       toast({ title: "Error", description: message, variant: "destructive" });

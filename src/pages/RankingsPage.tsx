@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
-import { currentGovernors, calcDKP } from "@/data/governors";
+import { useLatestGovernorStats, type GovernorStat } from "@/hooks/useGovernorData";
+import { fmt } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -8,20 +9,23 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { ArrowUpDown, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { ArrowUpDown, ChevronLeft, ChevronRight, Download, Search, Loader2 } from "lucide-react";
 
-function fmt(n: number) {
-  if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(1) + "B";
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
-  if (n >= 1_000) return (n / 1_000).toFixed(1) + "K";
-  return n.toString();
+type SortKey =
+  | "governor_name" | "power" | "t1_kills" | "t2_kills" | "t3_kills"
+  | "t4_kills" | "t5_kills" | "total_kills" | "t45_kills" | "killpoints"
+  | "deaths" | "ranged" | "resource_gathered" | "rss_assistance"
+  | "helps" | "city_hall_level";
+
+function getSortValue(g: GovernorStat, key: SortKey): number | string {
+  if (key === "governor_name") return g.governor_name;
+  return (g as any)[key] ?? 0;
 }
 
-type SortKey = "name" | "power" | "t4Kills" | "t5Kills" | "deaths" | "deadTroops" | "healed" | "dkp" | "powerGrowth";
-
-const alliances = [...new Set(currentGovernors.map((g) => g.alliance))];
-
 export default function RankingsPage() {
+  const { data, isLoading } = useLatestGovernorStats();
+  const governors = data?.governors ?? [];
+
   const [search, setSearch] = useState("");
   const [allianceFilter, setAllianceFilter] = useState("all");
   const [sortKey, setSortKey] = useState<SortKey>("power");
@@ -29,22 +33,42 @@ export default function RankingsPage() {
   const [page, setPage] = useState(0);
   const [perPage, setPerPage] = useState(10);
 
+  const alliances = useMemo(() => [...new Set(governors.map((g) => g.alliance).filter(Boolean))], [governors]);
+
   const filtered = useMemo(() => {
-    let list = currentGovernors;
-    if (search) list = list.filter((g) => g.name.toLowerCase().includes(search.toLowerCase()));
+    let list = governors;
+    if (search) list = list.filter((g) => g.governor_name.toLowerCase().includes(search.toLowerCase()));
     if (allianceFilter !== "all") list = list.filter((g) => g.alliance === allianceFilter);
 
     list = [...list].sort((a, b) => {
-      const av = sortKey === "dkp" ? calcDKP(a) : (a as any)[sortKey];
-      const bv = sortKey === "dkp" ? calcDKP(b) : (b as any)[sortKey];
-      if (typeof av === "string") return sortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
-      return sortAsc ? av - bv : bv - av;
+      const av = getSortValue(a, sortKey);
+      const bv = getSortValue(b, sortKey);
+      if (typeof av === "string" && typeof bv === "string") return sortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
+      return sortAsc ? (av as number) - (bv as number) : (bv as number) - (av as number);
     });
     return list;
-  }, [search, allianceFilter, sortKey, sortAsc]);
+  }, [governors, search, allianceFilter, sortKey, sortAsc]);
 
   const paged = filtered.slice(page * perPage, (page + 1) * perPage);
   const totalPages = Math.ceil(filtered.length / perPage);
+
+  function downloadCSV() {
+    const header = columns.map((c) => c.label).join(",");
+    const rows = filtered.map((g) =>
+      columns.map((c) => {
+        const v = g[c.key as keyof GovernorStat];
+        if (c.key === "governor_name") return `"${String(v ?? "").replace(/"/g, '""')}"`;
+        return v ?? "";
+      }).join(",")
+    );
+    const blob = new Blob([header + "\n" + rows.join("\n")], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `rankings-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   function toggleSort(key: SortKey) {
     if (sortKey === key) setSortAsc(!sortAsc);
@@ -53,16 +77,36 @@ export default function RankingsPage() {
   }
 
   const columns: { key: SortKey; label: string }[] = [
-    { key: "name", label: "Governor" },
+    { key: "governor_name", label: "Governor" },
     { key: "power", label: "Power" },
-    { key: "t4Kills", label: "T4 Kills" },
-    { key: "t5Kills", label: "T5 Kills" },
+    { key: "killpoints", label: "Kill Points" },
+    { key: "t4_kills", label: "T4 Kills" },
+    { key: "t5_kills", label: "T5 Kills" },
+    { key: "t45_kills", label: "T4+5 Kills" },
+    { key: "total_kills", label: "Total Kills" },
     { key: "deaths", label: "Deaths" },
-    { key: "deadTroops", label: "Dead Troops" },
-    { key: "healed", label: "Healed" },
-    { key: "dkp", label: "DKP" },
-    { key: "powerGrowth", label: "Growth" },
+    { key: "ranged", label: "Ranged" },
+    { key: "resource_gathered", label: "RSS Gathered" },
+    { key: "helps", label: "Helps" },
+    { key: "city_hall_level", label: "CH Lvl" },
   ];
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!governors.length) {
+    return (
+      <div className="space-y-4">
+        <h1 className="font-display text-3xl font-bold">Governor Rankings</h1>
+        <p className="text-muted-foreground">No data yet. Upload a governor snapshot to see rankings.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -86,7 +130,7 @@ export default function RankingsPage() {
           <SelectContent>
             <SelectItem value="all">All Alliances</SelectItem>
             {alliances.map((a) => (
-              <SelectItem key={a} value={a}>[{a}]</SelectItem>
+              <SelectItem key={a!} value={a!}>[{a}]</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -100,6 +144,9 @@ export default function RankingsPage() {
             ))}
           </SelectContent>
         </Select>
+        <Button variant="outline" size="sm" onClick={downloadCSV} className="gap-1">
+          <Download className="h-4 w-4" /> Export CSV
+        </Button>
       </div>
 
       {/* Table */}
@@ -129,22 +176,21 @@ export default function RankingsPage() {
                 </TableCell>
                 <TableCell>
                   <div>
-                    <span className="font-medium text-foreground">{g.name}</span>
-                    <span className="ml-2 text-xs text-muted-foreground">[{g.alliance}]</span>
+                    <span className="font-medium text-foreground">{g.governor_name}</span>
+                    <span className="ml-2 text-xs text-muted-foreground">[{g.alliance ?? "—"}]</span>
                   </div>
                 </TableCell>
-                <TableCell className="font-medium">{fmt(g.power)}</TableCell>
-                <TableCell>{fmt(g.t4Kills)}</TableCell>
-                <TableCell>{fmt(g.t5Kills)}</TableCell>
-                <TableCell>{fmt(g.deaths)}</TableCell>
-                <TableCell>{fmt(g.deadTroops)}</TableCell>
-                <TableCell>{fmt(g.healed)}</TableCell>
-                <TableCell className="text-primary font-semibold">{fmt(calcDKP(g))}</TableCell>
-                <TableCell>
-                  <span className={g.powerGrowth >= 0 ? "text-success" : "text-danger"}>
-                    {g.powerGrowth >= 0 ? "+" : ""}{fmt(g.powerGrowth)}
-                  </span>
-                </TableCell>
+                <TableCell className="font-medium">{fmt(g.power ?? 0)}</TableCell>
+                <TableCell className="text-primary font-semibold">{fmt(g.killpoints ?? 0)}</TableCell>
+                <TableCell>{fmt(g.t4_kills ?? 0)}</TableCell>
+                <TableCell>{fmt(g.t5_kills ?? 0)}</TableCell>
+                <TableCell>{fmt(g.t45_kills ?? 0)}</TableCell>
+                <TableCell>{fmt(g.total_kills ?? 0)}</TableCell>
+                <TableCell>{fmt(g.deaths ?? 0)}</TableCell>
+                <TableCell>{fmt(g.ranged ?? 0)}</TableCell>
+                <TableCell>{fmt(g.resource_gathered ?? 0)}</TableCell>
+                <TableCell>{fmt(g.helps ?? 0)}</TableCell>
+                <TableCell>{g.city_hall_level ?? "—"}</TableCell>
               </TableRow>
             ))}
           </TableBody>

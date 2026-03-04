@@ -1,94 +1,120 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { currentGovernors, kingdomInfo, calcDKP } from "@/data/governors";
-import { Crown, Users, Swords, Skull, TrendingUp } from "lucide-react";
+import { useLatestGovernorStats } from "@/hooks/useGovernorData";
+import { Crown, Users, Swords, Skull, TrendingUp, Loader2 } from "lucide-react";
+import { fmt } from "@/lib/utils";
 
-function fmt(n: number) {
-  if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(1) + "B";
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
-  if (n >= 1_000) return (n / 1_000).toFixed(1) + "K";
-  return n.toString();
-}
+const iconMap = {
+  "Total Governors": Users,
+  "Average Power": TrendingUp,
+  "Total Kill Points": Swords,
+  "Total Deaths": Skull,
+  "Total Kills": Crown,
+};
 
-const stats = [
-  {
-    label: "Total Governors",
-    value: currentGovernors.length,
-    icon: Users,
-    color: "text-accent",
-  },
-  {
-    label: "Average Power",
-    value: fmt(currentGovernors.reduce((a, g) => a + g.power, 0) / currentGovernors.length),
-    icon: TrendingUp,
-    color: "text-primary",
-  },
-  {
-    label: "Total Kill Points",
-    value: fmt(currentGovernors.reduce((a, g) => a + g.t4Kills + g.t5Kills, 0)),
-    icon: Swords,
-    color: "text-danger",
-  },
-  {
-    label: "Total Deaths",
-    value: fmt(currentGovernors.reduce((a, g) => a + g.deaths, 0)),
-    icon: Skull,
-    color: "text-muted-foreground",
-  },
-  {
-    label: "Total DKP",
-    value: fmt(currentGovernors.reduce((a, g) => a + calcDKP(g), 0)),
-    icon: Crown,
-    color: "text-warning",
-  },
-];
+const colorMap: Record<string, string> = {
+  "Total Governors": "text-accent",
+  "Average Power": "text-primary",
+  "Total Kill Points": "text-danger",
+  "Total Deaths": "text-muted-foreground",
+  "Total Kills": "text-warning",
+};
 
 export default function DashboardPage() {
+  const { data, isLoading } = useLatestGovernorStats();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  const governors = data?.governors ?? [];
+  const snapshot = data?.snapshot;
+
+  if (!governors.length) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 text-muted-foreground gap-2">
+        <Crown className="h-12 w-12" />
+        <p className="text-lg font-medium">No data yet</p>
+        <p className="text-sm">Upload a governor snapshot to get started.</p>
+      </div>
+    );
+  }
+
+  const stats = [
+    { label: "Total Governors", value: governors.length.toString() },
+    {
+      label: "Average Power",
+      value: fmt(Math.round(governors.reduce((a, g) => a + (g.power ?? 0), 0) / governors.length)),
+    },
+    {
+      label: "Total Kill Points",
+      value: fmt(governors.reduce((a, g) => a + (g.killpoints ?? 0), 0)),
+    },
+    {
+      label: "Total Deaths",
+      value: fmt(governors.reduce((a, g) => a + (g.deaths ?? 0), 0)),
+    },
+    {
+      label: "Total Kills",
+      value: fmt(governors.reduce((a, g) => a + (g.total_kills ?? 0), 0)),
+    },
+  ];
+
   return (
     <div className="space-y-8">
       {/* Kingdom Header */}
       <div className="flex items-end justify-between">
         <div>
-          <p className="text-sm text-muted-foreground uppercase tracking-wider">Kingdom</p>
+          <p className="text-sm text-muted-foreground uppercase tracking-wider">Kingdom Overview</p>
           <h1 className="font-display text-4xl font-bold text-foreground">
-            #{kingdomInfo.number} — {kingdomInfo.name}
+            Governor Dashboard
           </h1>
         </div>
-        <p className="text-sm text-muted-foreground">
-          Last updated: {kingdomInfo.lastUpdated}
-        </p>
+        {snapshot && (
+          <p className="text-sm text-muted-foreground">
+            Snapshot: {snapshot.label || snapshot.snapshot_date}
+          </p>
+        )}
       </div>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        {stats.map((s) => (
-          <Card key={s.label} className="bg-card border-border">
-            <CardContent className="p-5 flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground uppercase tracking-wider">{s.label}</span>
-                <s.icon className={`h-4 w-4 ${s.color}`} />
-              </div>
-              <span className="font-display text-3xl font-bold text-foreground">{s.value}</span>
-            </CardContent>
-          </Card>
-        ))}
+        {stats.map((s) => {
+          const Icon = iconMap[s.label as keyof typeof iconMap];
+          const color = colorMap[s.label] ?? "text-primary";
+          return (
+            <Card key={s.label} className="bg-card border-border">
+              <CardContent className="p-5 flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground uppercase tracking-wider">{s.label}</span>
+                  <Icon className={`h-4 w-4 ${color}`} />
+                </div>
+                <span className="font-display text-3xl font-bold text-foreground">{s.value}</span>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       {/* Top Governors Preview */}
       <div>
         <h2 className="font-display text-xl font-semibold text-foreground mb-4">Top Governors by Power</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-          {[...currentGovernors]
-            .sort((a, b) => b.power - a.power)
+          {[...governors]
+            .sort((a, b) => (b.power ?? 0) - (a.power ?? 0))
             .slice(0, 8)
             .map((g, i) => (
               <Card key={g.id} className="bg-card border-border">
                 <CardContent className="p-4 flex items-center gap-3">
                   <span className="font-display text-2xl font-bold text-primary w-8">#{i + 1}</span>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-foreground truncate">{g.name}</p>
-                    <p className="text-xs text-muted-foreground">[{g.alliance}]</p>
+                    <p className="font-medium text-foreground truncate">{g.governor_name}</p>
+                    <p className="text-xs text-muted-foreground">[{g.alliance ?? "—"}]</p>
                   </div>
-                  <span className="font-display text-lg font-semibold text-foreground">{fmt(g.power)}</span>
+                  <span className="font-display text-lg font-semibold text-foreground">{fmt(g.power ?? 0)}</span>
                 </CardContent>
               </Card>
             ))}
