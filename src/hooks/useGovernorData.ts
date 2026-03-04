@@ -29,15 +29,6 @@ export interface GovernorStat {
   city_hall_level: number | null;
 }
 
-export interface KvKStat {
-  id: string;
-  snapshot_id: string;
-  governor_name: string;
-  alliance: string | null;
-  kvk_kills: number | null;
-  kvk_deaths: number | null;
-}
-
 export interface SnapshotRow {
   id: string;
   snapshot_date: string;
@@ -48,20 +39,20 @@ export interface SnapshotRow {
 
 // ── DKP calculation ───────────────────────────────────────────
 
-export function calcDKP(g: {
-  t4_kills: number | null;
-  t5_kills: number | null;
-  dead_troops: number | null;
-  killpoints: number | null;
-}) {
-  // Prefer killpoints from CSV when available, otherwise compute from t4/t5/dead
-  if (g.killpoints) return g.killpoints;
-  return (g.t4_kills ?? 0) * 4 + (g.t5_kills ?? 0) * 10 + (g.dead_troops ?? 0) * 15;
-}
+import { type DkpWeights, DEFAULT_WEIGHTS } from "./useDkpWeights";
 
-export function calcKvKPoints(g: { kvk_kills: number | null; kvk_deaths: number | null }) {
-  // KvK points: kills contribute positively, deaths count as sacrifice
-  return (g.kvk_kills ?? 0) + (g.kvk_deaths ?? 0) * 2;
+export function calcDKP(
+  g: {
+    t4_kills: number | null;
+    t5_kills: number | null;
+    deaths: number | null;
+    killpoints: number | null;
+  },
+  w: DkpWeights = DEFAULT_WEIGHTS,
+) {
+  // Prefer killpoints from CSV when available, otherwise compute from t4/t5/deaths
+  if (g.killpoints) return g.killpoints;
+  return (g.t4_kills ?? 0) * w.t4_kills + (g.t5_kills ?? 0) * w.t5_kills + (g.deaths ?? 0) * w.deaths;
 }
 
 // ── Hooks ─────────────────────────────────────────────────────
@@ -145,39 +136,6 @@ export function useLatestGovernorStats() {
         snapshot,
         governors: (stats ?? []) as GovernorStat[],
       };
-    },
-  });
-}
-
-/** Fetch KvK stats for a specific snapshot */
-export function useKvKStats(snapshotId: string | undefined) {
-  return useQuery({
-    queryKey: ["kvk_stats", snapshotId],
-    queryFn: async () => {
-      if (!snapshotId) return [];
-      const { data, error } = await supabase
-        .from("kvk_stats")
-        .select("*")
-        .eq("snapshot_id", snapshotId);
-      if (error) throw error;
-      return (data ?? []) as KvKStat[];
-    },
-    enabled: !!snapshotId,
-  });
-}
-
-/** Fetch all KvK snapshots with their stats */
-export function useKvKSnapshots() {
-  return useQuery({
-    queryKey: ["kvk_snapshots"],
-    queryFn: async () => {
-      const { data: snapshots, error: snapError } = await supabase
-        .from("snapshots")
-        .select("*")
-        .eq("snapshot_type", "kvk")
-        .order("snapshot_date", { ascending: true });
-      if (snapError) throw snapError;
-      return (snapshots ?? []) as SnapshotRow[];
     },
   });
 }

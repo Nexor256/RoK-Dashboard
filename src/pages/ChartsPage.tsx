@@ -24,13 +24,13 @@ interface KingdomPoint {
 }
 
 const chartStyle = {
-  grid: "hsl(220, 15%, 22%)",
-  tick: { fill: "hsl(215, 15%, 55%)", fontSize: 11 },
+  grid: "hsl(var(--border))",
+  tick: { fill: "hsl(var(--muted-foreground))", fontSize: 11 },
   tooltip: {
-    background: "hsl(220, 20%, 13%)",
-    border: "1px solid hsl(220, 15%, 22%)",
+    background: "hsl(var(--card))",
+    border: "1px solid hsl(var(--border))",
     borderRadius: 8,
-    color: "hsl(210, 20%, 92%)",
+    color: "hsl(var(--foreground))",
   },
 };
 
@@ -67,12 +67,15 @@ export default function ChartsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="font-display text-3xl font-bold">Kingdom Overview</h1>
+      <div>
+        <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight">Kingdom Overview</h1>
+        <p className="text-sm text-muted-foreground mt-1">Track kingdom-wide trends across all snapshots</p>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Total Power Over Time */}
-        <Card className="bg-card border-border">
-          <CardHeader><CardTitle className="font-display text-lg">Total Kingdom Power</CardTitle></CardHeader>
+        <Card className="border-border/60 card-hover">
+          <CardHeader><CardTitle className="font-display text-base font-bold">Total Kingdom Power</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <AreaChart data={data}>
@@ -87,8 +90,8 @@ export default function ChartsPage() {
         </Card>
 
         {/* Kill Points Over Time */}
-        <Card className="bg-card border-border">
-          <CardHeader><CardTitle className="font-display text-lg">Kingdom Kill Points</CardTitle></CardHeader>
+        <Card className="border-border/60 card-hover">
+          <CardHeader><CardTitle className="font-display text-base font-bold">Kingdom Kill Points</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={data}>
@@ -96,7 +99,7 @@ export default function ChartsPage() {
                 <XAxis dataKey="date" tick={chartStyle.tick} />
                 <YAxis tickFormatter={fmt} tick={chartStyle.tick} />
                 <Tooltip contentStyle={chartStyle.tooltip} formatter={(v: number) => fmt(v)} />
-                <Legend wrapperStyle={{ color: "hsl(210, 20%, 85%)" }} />
+                <Legend wrapperStyle={{ color: "hsl(var(--foreground))" }} />
                 <Line type="monotone" dataKey="totalKillpoints" name="Kill Points" stroke="hsl(45, 100%, 55%)" strokeWidth={2} dot={{ fill: "hsl(45, 100%, 55%)" }} />
                 <Line type="monotone" dataKey="totalT4Kills" name="T4 Kills" stroke="hsl(200, 80%, 50%)" strokeWidth={2} dot={{ fill: "hsl(200, 80%, 50%)" }} />
                 <Line type="monotone" dataKey="totalT5Kills" name="T5 Kills" stroke="hsl(0, 72%, 55%)" strokeWidth={2} dot={{ fill: "hsl(0, 72%, 55%)" }} />
@@ -106,8 +109,8 @@ export default function ChartsPage() {
         </Card>
 
         {/* Deaths & Total Kills Over Time */}
-        <Card className="bg-card border-border">
-          <CardHeader><CardTitle className="font-display text-lg">Kills & Deaths</CardTitle></CardHeader>
+        <Card className="border-border/60 card-hover">
+          <CardHeader><CardTitle className="font-display text-base font-bold">Kills & Deaths</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={data}>
@@ -115,7 +118,7 @@ export default function ChartsPage() {
                 <XAxis dataKey="date" tick={chartStyle.tick} />
                 <YAxis tickFormatter={fmt} tick={chartStyle.tick} />
                 <Tooltip contentStyle={chartStyle.tooltip} formatter={(v: number) => fmt(v)} />
-                <Legend wrapperStyle={{ color: "hsl(210, 20%, 85%)" }} />
+                <Legend wrapperStyle={{ color: "hsl(var(--foreground))" }} />
                 <Line type="monotone" dataKey="totalKills" name="Total Kills" stroke="hsl(150, 60%, 45%)" strokeWidth={2} dot={{ fill: "hsl(150, 60%, 45%)" }} />
                 <Line type="monotone" dataKey="totalDeaths" name="Deaths" stroke="hsl(0, 72%, 55%)" strokeWidth={2} dot={{ fill: "hsl(0, 72%, 55%)" }} />
               </LineChart>
@@ -124,8 +127,8 @@ export default function ChartsPage() {
         </Card>
 
         {/* Resources & Helps */}
-        <Card className="bg-card border-border">
-          <CardHeader><CardTitle className="font-display text-lg">Resources & Community</CardTitle></CardHeader>
+        <Card className="border-border/60 card-hover">
+          <CardHeader><CardTitle className="font-display text-base font-bold">Resources & Community</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <AreaChart data={data}>
@@ -133,7 +136,7 @@ export default function ChartsPage() {
                 <XAxis dataKey="date" tick={chartStyle.tick} />
                 <YAxis tickFormatter={fmt} tick={chartStyle.tick} />
                 <Tooltip contentStyle={chartStyle.tooltip} formatter={(v: number) => fmt(v)} />
-                <Legend wrapperStyle={{ color: "hsl(210, 20%, 85%)" }} />
+                <Legend wrapperStyle={{ color: "hsl(var(--foreground))" }} />
                 <Area type="monotone" dataKey="totalResourceGathered" name="RSS Gathered" stroke="hsl(280, 60%, 55%)" fill="hsl(280, 60%, 55%)" fillOpacity={0.15} strokeWidth={2} />
                 <Area type="monotone" dataKey="totalRssAssistance" name="RSS Assistance" stroke="hsl(200, 60%, 55%)" fill="hsl(200, 60%, 55%)" fillOpacity={0.1} strokeWidth={2} />
                 <Area type="monotone" dataKey="totalHelps" name="Helps" stroke="hsl(45, 100%, 55%)" fill="hsl(45, 100%, 55%)" fillOpacity={0.1} strokeWidth={2} />

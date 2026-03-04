@@ -23,22 +23,16 @@ import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2, Trash2, Al
 import { useToast } from "@/hooks/use-toast";
 import { parseCSV, normalizeHeaders, type ParsedRow } from "@/lib/csv";
 
-type UploadType = "general" | "kvk";
-
 const GENERAL_COLUMNS = [
   "governor_id", "governor_name", "alliance", "power",
   "t1_kills", "t2_kills", "t3_kills", "t4_kills", "t5_kills",
   "total_kills", "t45_kills", "killpoints",
-  "deaths", "ranged", "resource_gathered", "rss_assistance",
+  "deaths", "ranged", "dead_troops", "healed",
+  "resource_gathered", "rss_assistance",
   "helps", "city_hall_level",
 ];
 
-const KVK_COLUMNS = [
-  "governor_name", "alliance", "kvk_kills", "kvk_deaths",
-];
-
 export default function UploadPage() {
-  const [uploadType, setUploadType] = useState<UploadType>("general");
   const [snapshotDate, setSnapshotDate] = useState("");
   const [snapshotLabel, setSnapshotLabel] = useState("");
   const [parsedData, setParsedData] = useState<ParsedRow[]>([]);
@@ -47,15 +41,14 @@ export default function UploadPage() {
   const [uploadResult, setUploadResult] = useState<{ success: boolean; message: string } | null>(null);
   const { toast } = useToast();
 
-  const expectedColumns = uploadType === "general" ? GENERAL_COLUMNS : KVK_COLUMNS;
+  const expectedColumns = GENERAL_COLUMNS;
 
   // Validate parsed data
   const warnings = useMemo(() => {
     if (!parsedData.length) return [];
     const w: string[] = [];
 
-    // Check for missing required columns
-    const required = uploadType === "general" ? ["governor_name"] : ["governor_name"];
+    const required = ["governor_name"];
     const sampleKeys = Object.keys(parsedData[0]);
     const missing = expectedColumns.filter((c) => !sampleKeys.includes(c));
     if (missing.length) w.push(`Missing columns: ${missing.join(", ")}`);
@@ -76,7 +69,7 @@ export default function UploadPage() {
     if (badValues) w.push(`${badValues} non-numeric value(s) detected in numeric columns (checked first 50 rows)`);
 
     return w;
-  }, [parsedData, expectedColumns, uploadType]);
+  }, [parsedData, expectedColumns]);
 
   const handleFileChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -115,7 +108,7 @@ export default function UploadPage() {
         .from("snapshots")
         .insert({
           snapshot_date: snapshotDate,
-          snapshot_type: uploadType,
+          snapshot_type: "general",
           label: snapshotLabel || null,
         })
         .select()
@@ -125,41 +118,31 @@ export default function UploadPage() {
 
       // Insert rows — if this fails, roll back the snapshot
       try {
-        if (uploadType === "general") {
-          const rows = parsedData.map((row) => ({
-            snapshot_id: snapshot.id,
-            governor_id: row.governor_id || null,
-            governor_name: row.governor_name || "",
-            alliance: row.alliance || "",
-            power: parseInt(row.power || "0", 10) || 0,
-            t1_kills: parseInt(row.t1_kills || "0", 10) || 0,
-            t2_kills: parseInt(row.t2_kills || "0", 10) || 0,
-            t3_kills: parseInt(row.t3_kills || "0", 10) || 0,
-            t4_kills: parseInt(row.t4_kills || "0", 10) || 0,
-            t5_kills: parseInt(row.t5_kills || "0", 10) || 0,
-            total_kills: parseInt(row.total_kills || "0", 10) || 0,
-            t45_kills: parseInt(row.t45_kills || "0", 10) || 0,
-            killpoints: parseInt(row.killpoints || "0", 10) || 0,
-            deaths: parseInt(row.deaths || "0", 10) || 0,
-            ranged: parseInt(row.ranged || "0", 10) || 0,
-            resource_gathered: parseInt(row.resource_gathered || "0", 10) || 0,
-            rss_assistance: parseInt(row.rss_assistance || "0", 10) || 0,
-            helps: parseInt(row.helps || "0", 10) || 0,
-            city_hall_level: parseInt(row.city_hall_level || "0", 10) || 0,
-          }));
-          const { error: insertError } = await supabase.from("governor_stats").insert(rows);
-          if (insertError) throw insertError;
-        } else {
-          const rows = parsedData.map((row) => ({
-            snapshot_id: snapshot.id,
-            governor_name: row.governor_name || "",
-            alliance: row.alliance || "",
-            kvk_kills: parseInt(row.kvk_kills || "0", 10) || 0,
-            kvk_deaths: parseInt(row.kvk_deaths || "0", 10) || 0,
-          }));
-          const { error: insertError } = await supabase.from("kvk_stats").insert(rows);
-          if (insertError) throw insertError;
-        }
+        const rows = parsedData.map((row) => ({
+          snapshot_id: snapshot.id,
+          governor_id: row.governor_id || null,
+          governor_name: row.governor_name || "",
+          alliance: row.alliance || "",
+          power: parseInt(row.power || "0", 10) || 0,
+          t1_kills: parseInt(row.t1_kills || "0", 10) || 0,
+          t2_kills: parseInt(row.t2_kills || "0", 10) || 0,
+          t3_kills: parseInt(row.t3_kills || "0", 10) || 0,
+          t4_kills: parseInt(row.t4_kills || "0", 10) || 0,
+          t5_kills: parseInt(row.t5_kills || "0", 10) || 0,
+          total_kills: parseInt(row.total_kills || "0", 10) || 0,
+          t45_kills: parseInt(row.t45_kills || "0", 10) || 0,
+          killpoints: parseInt(row.killpoints || "0", 10) || 0,
+          deaths: parseInt(row.deaths || "0", 10) || 0,
+          ranged: parseInt(row.ranged || "0", 10) || 0,
+          dead_troops: parseInt(row.dead_troops || "0", 10) || 0,
+          healed: parseInt(row.healed || "0", 10) || 0,
+          resource_gathered: parseInt(row.resource_gathered || "0", 10) || 0,
+          rss_assistance: parseInt(row.rss_assistance || "0", 10) || 0,
+          helps: parseInt(row.helps || "0", 10) || 0,
+          city_hall_level: parseInt(row.city_hall_level || "0", 10) || 0,
+        }));
+        const { error: insertError } = await supabase.from("governor_stats").insert(rows);
+        if (insertError) throw insertError;
       } catch (insertErr) {
         // Rollback: delete the orphan snapshot
         await supabase.from("snapshots").delete().eq("id", snapshot.id);
@@ -168,7 +151,7 @@ export default function UploadPage() {
 
       setUploadResult({
         success: true,
-        message: `Successfully uploaded ${parsedData.length} governors to ${uploadType} snapshot`,
+        message: `Successfully uploaded ${parsedData.length} governors`,
       });
       setParsedData([]);
       setFileName("");
@@ -189,8 +172,8 @@ export default function UploadPage() {
   return (
     <div className="space-y-6 max-w-5xl">
       <div>
-        <h1 className="font-display text-3xl font-bold text-primary">Upload Data</h1>
-        <p className="text-muted-foreground mt-1">Import governor data from CSV spreadsheets</p>
+        <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight">Upload Data</h1>
+        <p className="text-sm text-muted-foreground mt-1">Import governor data from CSV spreadsheets</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -205,19 +188,6 @@ export default function UploadPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Data Type</Label>
-              <Select value={uploadType} onValueChange={(v) => { setUploadType(v as UploadType); setParsedData([]); setFileName(""); }}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="general">General Governor Stats</SelectItem>
-                  <SelectItem value="kvk">KvK Performance</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
             <div className="space-y-2">
               <Label>Snapshot Date</Label>
               <Input type="date" value={snapshotDate} onChange={(e) => setSnapshotDate(e.target.value)} />

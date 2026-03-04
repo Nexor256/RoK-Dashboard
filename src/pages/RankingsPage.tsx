@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useLatestGovernorStats, type GovernorStat } from "@/hooks/useGovernorData";
 import { fmt } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -42,7 +43,10 @@ export default function RankingsPage() {
 
   const filtered = useMemo(() => {
     let list = governors;
-    if (search) list = list.filter((g) => g.governor_name.toLowerCase().includes(search.toLowerCase()));
+    if (search) {
+      const q = search.toLowerCase();
+      list = list.filter((g) => g.governor_name.toLowerCase().includes(q) || (g.governor_id && g.governor_id.toLowerCase().includes(q)));
+    }
     if (allianceFilter !== "all") list = list.filter((g) => g.alliance === allianceFilter);
 
     list = [...list].sort((a, b) => {
@@ -115,22 +119,25 @@ export default function RankingsPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <h1 className="font-display text-2xl sm:text-3xl font-bold">Governor Rankings</h1>
+    <div className="space-y-5">
+      <div>
+        <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight">Governor Rankings</h1>
+        <p className="text-sm text-muted-foreground mt-1">Detailed stats for all governors in the kingdom</p>
+      </div>
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 items-center">
         <div className="relative w-full sm:flex-1 sm:min-w-[200px] sm:max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search governor..."
+            placeholder="Search name or ID..."
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(0); }}
-            className="pl-9 bg-card border-border"
+            className="pl-9 bg-card border-border/60"
           />
         </div>
         <Select value={allianceFilter} onValueChange={(v) => { setAllianceFilter(v); setPage(0); }}>
-          <SelectTrigger className="w-[160px] bg-card border-border">
+          <SelectTrigger className="w-[160px] bg-card border-border/60">
             <SelectValue placeholder="All Alliances" />
           </SelectTrigger>
           <SelectContent>
@@ -141,7 +148,7 @@ export default function RankingsPage() {
           </SelectContent>
         </Select>
         <Select value={String(perPage)} onValueChange={(v) => { setPerPage(Number(v)); setPage(0); }}>
-          <SelectTrigger className="w-[120px] bg-card border-border">
+          <SelectTrigger className="w-[120px] bg-card border-border/60">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -150,63 +157,65 @@ export default function RankingsPage() {
             ))}
           </SelectContent>
         </Select>
-        <Button variant="outline" size="sm" onClick={downloadCSV} className="gap-1">
+        <Button variant="outline" size="sm" onClick={downloadCSV} className="gap-1.5 rounded-lg">
           <Download className="h-4 w-4" /> Export CSV
         </Button>
       </div>
 
       {/* Table */}
-      <div className="rounded-lg border border-border overflow-x-auto">
-        <Table className="min-w-[900px]">
-          <TableHeader>
-            <TableRow className="bg-secondary/50 hover:bg-secondary/50">
-              <TableHead className="w-10 text-center">#</TableHead>
-              {columns.map((col) => (
-                <TableHead key={col.key}>
-                  <button
-                    onClick={() => toggleSort(col.key)}
-                    className="flex items-center gap-1 hover:text-foreground transition-colors"
-                  >
-                    {col.label}
-                    <ArrowUpDown className="h-3 w-3" />
-                  </button>
-                </TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paged.map((g, i) => (
-              <TableRow key={g.id} className="hover:bg-muted/30">
-                <TableCell className="text-center text-muted-foreground font-medium">
-                  {page * perPage + i + 1}
-                </TableCell>
-                <TableCell>
-                  <button
-                    onClick={() => setSelectedGov(g)}
-                    className="font-medium text-primary hover:underline cursor-pointer text-left"
-                  >
-                    {g.governor_name}
-                  </button>
-                </TableCell>
-                <TableCell>
-                  <span className="text-muted-foreground">{g.alliance ?? "—"}</span>
-                </TableCell>
-                <TableCell className="font-medium">{fmt(g.power ?? 0)}</TableCell>
-                <TableCell className="text-primary font-semibold">{fmt(g.killpoints ?? 0)}</TableCell>
-                <TableCell>{fmt(g.t4_kills ?? 0)}</TableCell>
-                <TableCell>{fmt(g.t5_kills ?? 0)}</TableCell>
-                <TableCell>{fmt(g.t45_kills ?? 0)}</TableCell>
-                <TableCell>{fmt(g.total_kills ?? 0)}</TableCell>
-                <TableCell>{fmt(g.deaths ?? 0)}</TableCell>
-                <TableCell>{fmt(g.ranged ?? 0)}</TableCell>
-                <TableCell>{fmt(g.resource_gathered ?? 0)}</TableCell>
-                <TableCell>{fmt(g.helps ?? 0)}</TableCell>
-                <TableCell>{g.city_hall_level ?? "—"}</TableCell>
+      <Card className="border-border/60 overflow-hidden">
+        <div className="overflow-x-auto">
+          <Table className="min-w-[900px]">
+            <TableHeader>
+              <TableRow className="bg-muted/50 hover:bg-muted/50 border-b border-border">
+                <TableHead className="w-10 text-center">#</TableHead>
+                {columns.map((col) => (
+                  <TableHead key={col.key}>
+                    <button
+                      onClick={() => toggleSort(col.key)}
+                      className="flex items-center gap-1 hover:text-foreground transition-colors text-xs font-semibold uppercase tracking-wider"
+                    >
+                      {col.label}
+                      <ArrowUpDown className="h-3 w-3" />
+                    </button>
+                  </TableHead>
+                ))}
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {paged.map((g, i) => (
+                <TableRow key={g.id} className="hover:bg-muted/30 transition-colors even:bg-muted/10">
+                  <TableCell className="text-center text-muted-foreground text-xs font-medium">
+                    {page * perPage + i + 1}
+                  </TableCell>
+                  <TableCell>
+                    <button
+                      onClick={() => setSelectedGov(g)}
+                      className="font-semibold text-primary hover:underline cursor-pointer text-left text-sm"
+                    >
+                      {g.governor_name}
+                    </button>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-muted-foreground text-sm">{g.alliance ?? "—"}</span>
+                  </TableCell>
+                  <TableCell className="font-semibold text-sm tabular-nums">{fmt(g.power ?? 0)}</TableCell>
+                  <TableCell className="text-primary font-semibold text-sm tabular-nums">{fmt(g.killpoints ?? 0)}</TableCell>
+                  <TableCell className="text-sm tabular-nums">{fmt(g.t4_kills ?? 0)}</TableCell>
+                  <TableCell className="text-sm tabular-nums">{fmt(g.t5_kills ?? 0)}</TableCell>
+                  <TableCell className="text-sm tabular-nums">{fmt(g.t45_kills ?? 0)}</TableCell>
+                  <TableCell className="text-sm tabular-nums">{fmt(g.total_kills ?? 0)}</TableCell>
+                  <TableCell className="text-sm tabular-nums">{fmt(g.deaths ?? 0)}</TableCell>
+                  <TableCell className="text-sm tabular-nums">{fmt(g.ranged ?? 0)}</TableCell>
+                  <TableCell className="text-sm tabular-nums">{fmt(g.resource_gathered ?? 0)}</TableCell>
+                  <TableCell className="text-sm tabular-nums">{fmt(g.helps ?? 0)}</TableCell>
+                  <TableCell className="text-sm">{g.city_hall_level ?? "—"}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </Card>
 
       {/* Governor detail dialog */}
       <Dialog open={!!selectedGov} onOpenChange={(open) => { if (!open) setSelectedGov(null); }}>
@@ -239,12 +248,12 @@ export default function RankingsPage() {
 
       {/* Pagination */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-sm text-muted-foreground">
-        <span>Showing {page * perPage + 1}–{Math.min((page + 1) * perPage, filtered.length)} of {filtered.length}</span>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(page - 1)}>
+        <span>Showing <strong className="text-foreground">{page * perPage + 1}–{Math.min((page + 1) * perPage, filtered.length)}</strong> of {filtered.length}</span>
+        <div className="flex gap-1.5">
+          <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(page - 1)} className="rounded-lg">
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)}>
+          <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)} className="rounded-lg">
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>

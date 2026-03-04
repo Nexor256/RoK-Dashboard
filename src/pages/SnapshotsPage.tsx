@@ -88,18 +88,21 @@ export default function SnapshotsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="font-display text-3xl font-bold">Historical Snapshots</h1>
+      <div>
+        <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight">Historical Snapshots</h1>
+        <p className="text-sm text-muted-foreground mt-1">Compare governor data across different snapshots</p>
+      </div>
 
-      <Card className="bg-card border-border">
+      <Card className="border-border/60">
         <CardHeader>
           <CardTitle className="font-display text-lg">Compare Snapshots</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col sm:flex-row flex-wrap gap-4 items-start sm:items-center mb-6">
             <div className="flex items-center gap-2 w-full sm:w-auto">
-              <span className="text-sm text-muted-foreground">From:</span>
+              <span className="text-sm font-medium text-muted-foreground">From:</span>
               <Select value={resolvedSnapA} onValueChange={setSnapA}>
-                <SelectTrigger className="w-full sm:w-[220px] bg-secondary border-border">
+                <SelectTrigger className="w-full sm:w-[220px] bg-muted border-border/60">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -110,9 +113,9 @@ export default function SnapshotsPage() {
               </Select>
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
-              <span className="text-sm text-muted-foreground">To:</span>
+              <span className="text-sm font-medium text-muted-foreground">To:</span>
               <Select value={resolvedSnapB} onValueChange={setSnapB}>
-                <SelectTrigger className="w-full sm:w-[220px] bg-secondary border-border">
+                <SelectTrigger className="w-full sm:w-[220px] bg-muted border-border/60">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -129,10 +132,10 @@ export default function SnapshotsPage() {
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <div className="rounded-lg border border-border overflow-x-auto">
+            <div className="rounded-lg border border-border/60 overflow-x-auto">
               <Table className="min-w-[800px]">
                 <TableHeader>
-                  <TableRow className="bg-secondary/50 hover:bg-secondary/50">
+                  <TableRow className="bg-muted/50 hover:bg-muted/50 border-b border-border">
                     <TableHead>Governor</TableHead>
                     <TableHead>Power (From)</TableHead>
                     <TableHead>Power (To)</TableHead>
@@ -145,7 +148,7 @@ export default function SnapshotsPage() {
                 </TableHeader>
                 <TableBody>
                   {comparison.map((row) => (
-                    <TableRow key={row.id} className="hover:bg-muted/30">
+                    <TableRow key={row.id} className="hover:bg-muted/30 transition-colors even:bg-muted/10">
                       <TableCell>
                         <span className="font-medium">{row.governor_name}</span>
                         <span className="ml-2 text-xs text-muted-foreground">[{row.alliance ?? "—"}]</span>
