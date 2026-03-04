@@ -54,18 +54,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     setProfile(profileData);
 
-    // Auto-assign admin if no admins exist (first user becomes admin)
-    if (!roleRes.data) {
-      const { count } = await supabase
-        .from("user_roles")
-        .select("*", { count: "exact", head: true })
-        .eq("role", "admin");
-      if (count === 0) {
-        await supabase.from("user_roles").insert({ user_id: userId, role: "admin" });
-        setIsAdmin(true);
-        return;
-      }
-    }
     setIsAdmin(!!roleRes.data);
   };
 

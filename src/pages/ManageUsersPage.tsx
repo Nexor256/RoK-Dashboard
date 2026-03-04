@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
+import { Badge } from "@/components/ui/badge";
 import { UserPlus, Loader2, Users, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -17,6 +18,11 @@ interface Profile {
   display_name: string;
   avatar_url: string | null;
   created_at: string;
+}
+
+interface UserRole {
+  user_id: string;
+  role: string;
 }
 
 export default function ManageUsersPage() {
@@ -37,6 +43,20 @@ export default function ManageUsersPage() {
       return (data as Profile[]) || [];
     },
   });
+
+  const { data: roles = [] } = useQuery({
+    queryKey: ["user-roles"],
+    queryFn: async () => {
+      const { data } = await supabase.from("user_roles").select("user_id, role");
+      return (data as UserRole[]) || [];
+    },
+  });
+
+  const getRoleBadge = (userId: string) => {
+    const role = roles.find((r) => r.user_id === userId);
+    if (role?.role === "admin") return <Badge className="bg-primary text-primary-foreground text-xs">Admin</Badge>;
+    return <Badge variant="outline" className="text-xs">User</Badge>;
+  };
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -68,7 +88,11 @@ export default function ManageUsersPage() {
         body: { email, password, display_name: displayName, avatar_url: avatarUrl },
       });
 
-      if (error) throw error;
+      if (error) {
+        // Try to extract the JSON body from the edge function response
+        const msg = data?.error || error.message || "Failed to create user";
+        throw new Error(msg);
+      }
       if (data?.error) throw new Error(data.error);
 
       toast({ title: "User created", description: `${displayName} can now sign in with ${email}` });
@@ -159,6 +183,7 @@ export default function ManageUsersPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Player</TableHead>
+                    <TableHead>Role</TableHead>
                     <TableHead>Joined</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -174,6 +199,7 @@ export default function ManageUsersPage() {
                           <span className="font-medium">{p.display_name}</span>
                         </div>
                       </TableCell>
+                      <TableCell>{getRoleBadge(p.user_id)}</TableCell>
                       <TableCell className="text-muted-foreground text-sm">
                         {new Date(p.created_at).toLocaleDateString()}
                       </TableCell>

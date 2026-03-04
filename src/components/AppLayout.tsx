@@ -1,9 +1,10 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, TableProperties, BarChart3, History, Crown, Swords, Upload, LogOut, Shield } from "lucide-react";
+import { LayoutDashboard, TableProperties, BarChart3, History, Crown, Swords, Upload, LogOut, Shield, Moon, Sun } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useTheme } from "@/hooks/useTheme";
 
 const navItems = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -17,6 +18,7 @@ const navItems = [
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();
   const { signOut, profile, isAdmin } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   const visibleItems = navItems.filter((item) => !item.adminOnly || isAdmin);
 
@@ -26,7 +28,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="flex items-center gap-3">
           <Crown className="h-7 w-7 text-primary" />
           <span className="font-display text-2xl font-bold tracking-wide text-primary">
-            ROK Governor Tracker
+            ROK Dashboard
           </span>
         </div>
         <nav className="flex items-center gap-1">
@@ -60,6 +62,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </Link>
           )}
           <div className="ml-2 pl-2 border-l border-border flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={toggleTheme} className="text-muted-foreground hover:text-foreground">
+              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
             <Avatar className="h-7 w-7">
               <AvatarImage src={profile?.avatar_url || ""} />
               <AvatarFallback className="text-xs">{profile?.display_name?.[0]?.toUpperCase() || "?"}</AvatarFallback>

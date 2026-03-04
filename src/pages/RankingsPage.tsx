@@ -9,16 +9,20 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
 import { ArrowUpDown, ChevronLeft, ChevronRight, Download, Search, Loader2 } from "lucide-react";
 
 type SortKey =
-  | "governor_name" | "power" | "t1_kills" | "t2_kills" | "t3_kills"
+  | "governor_name" | "alliance" | "power" | "t1_kills" | "t2_kills" | "t3_kills"
   | "t4_kills" | "t5_kills" | "total_kills" | "t45_kills" | "killpoints"
   | "deaths" | "ranged" | "resource_gathered" | "rss_assistance"
   | "helps" | "city_hall_level";
 
 function getSortValue(g: GovernorStat, key: SortKey): number | string {
   if (key === "governor_name") return g.governor_name;
+  if (key === "alliance") return g.alliance ?? "";
   return (g as any)[key] ?? 0;
 }
 
@@ -32,6 +36,7 @@ export default function RankingsPage() {
   const [sortAsc, setSortAsc] = useState(false);
   const [page, setPage] = useState(0);
   const [perPage, setPerPage] = useState(10);
+  const [selectedGov, setSelectedGov] = useState<GovernorStat | null>(null);
 
   const alliances = useMemo(() => [...new Set(governors.map((g) => g.alliance).filter(Boolean))], [governors]);
 
@@ -57,7 +62,7 @@ export default function RankingsPage() {
     const rows = filtered.map((g) =>
       columns.map((c) => {
         const v = g[c.key as keyof GovernorStat];
-        if (c.key === "governor_name") return `"${String(v ?? "").replace(/"/g, '""')}"`;
+        if (c.key === "governor_name" || c.key === "alliance") return `"${String(v ?? "").replace(/"/g, '""')}"`;
         return v ?? "";
       }).join(",")
     );
@@ -78,6 +83,7 @@ export default function RankingsPage() {
 
   const columns: { key: SortKey; label: string }[] = [
     { key: "governor_name", label: "Governor" },
+    { key: "alliance", label: "Alliance" },
     { key: "power", label: "Power" },
     { key: "killpoints", label: "Kill Points" },
     { key: "t4_kills", label: "T4 Kills" },
@@ -175,10 +181,15 @@ export default function RankingsPage() {
                   {page * perPage + i + 1}
                 </TableCell>
                 <TableCell>
-                  <div>
-                    <span className="font-medium text-foreground">{g.governor_name}</span>
-                    <span className="ml-2 text-xs text-muted-foreground">[{g.alliance ?? "—"}]</span>
-                  </div>
+                  <button
+                    onClick={() => setSelectedGov(g)}
+                    className="font-medium text-primary hover:underline cursor-pointer text-left"
+                  >
+                    {g.governor_name}
+                  </button>
+                </TableCell>
+                <TableCell>
+                  <span className="text-muted-foreground">{g.alliance ?? "—"}</span>
                 </TableCell>
                 <TableCell className="font-medium">{fmt(g.power ?? 0)}</TableCell>
                 <TableCell className="text-primary font-semibold">{fmt(g.killpoints ?? 0)}</TableCell>
@@ -196,6 +207,35 @@ export default function RankingsPage() {
           </TableBody>
         </Table>
       </div>
+
+      {/* Governor detail dialog */}
+      <Dialog open={!!selectedGov} onOpenChange={(open) => { if (!open) setSelectedGov(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl">{selectedGov?.governor_name}</DialogTitle>
+          </DialogHeader>
+          {selectedGov && (
+            <div className="grid grid-cols-2 gap-4 py-2">
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Governor ID</p>
+                <p className="font-semibold text-foreground">{selectedGov.governor_id ?? "—"}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Power</p>
+                <p className="font-semibold text-foreground">{fmt(selectedGov.power ?? 0)}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Total Kill Points</p>
+                <p className="font-semibold text-primary">{fmt(selectedGov.killpoints ?? 0)}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Deaths</p>
+                <p className="font-semibold text-foreground">{fmt(selectedGov.deaths ?? 0)}</p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Pagination */}
       <div className="flex items-center justify-between text-sm text-muted-foreground">

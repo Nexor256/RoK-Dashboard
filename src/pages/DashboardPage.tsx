@@ -1,11 +1,16 @@
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useLatestGovernorStats } from "@/hooks/useGovernorData";
-import { Crown, Users, Swords, Skull, TrendingUp, Loader2 } from "lucide-react";
+import { useKingdomSettings, useUpdateKingdomSettings } from "@/hooks/useKingdomSettings";
+import { useAuth } from "@/hooks/useAuth";
+import { Crown, Users, Swords, Skull, TrendingUp, Loader2, Pencil, Check, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { fmt } from "@/lib/utils";
 
 const iconMap = {
   "Total Governors": Users,
-  "Average Power": TrendingUp,
+  "Total Power": TrendingUp,
   "Total Kill Points": Swords,
   "Total Deaths": Skull,
   "Total Kills": Crown,
@@ -13,7 +18,7 @@ const iconMap = {
 
 const colorMap: Record<string, string> = {
   "Total Governors": "text-accent",
-  "Average Power": "text-primary",
+  "Total Power": "text-primary",
   "Total Kill Points": "text-danger",
   "Total Deaths": "text-muted-foreground",
   "Total Kills": "text-warning",
@@ -21,6 +26,27 @@ const colorMap: Record<string, string> = {
 
 export default function DashboardPage() {
   const { data, isLoading } = useLatestGovernorStats();
+  const { data: kingdom, isLoading: kingdomLoading } = useKingdomSettings();
+  const updateKingdom = useUpdateKingdomSettings();
+  const { isAdmin } = useAuth();
+
+  const [editing, setEditing] = useState(false);
+  const [editNumber, setEditNumber] = useState("");
+  const [editName, setEditName] = useState("");
+
+  function startEdit() {
+    setEditNumber(String(kingdom?.kingdom_number ?? ""));
+    setEditName(kingdom?.kingdom_name ?? "");
+    setEditing(true);
+  }
+
+  function saveEdit() {
+    if (!kingdom) return;
+    updateKingdom.mutate(
+      { id: kingdom.id, kingdom_number: Number(editNumber) || 0, kingdom_name: editName },
+      { onSuccess: () => setEditing(false) },
+    );
+  }
 
   if (isLoading) {
     return (
@@ -46,8 +72,8 @@ export default function DashboardPage() {
   const stats = [
     { label: "Total Governors", value: governors.length.toString() },
     {
-      label: "Average Power",
-      value: fmt(Math.round(governors.reduce((a, g) => a + (g.power ?? 0), 0) / governors.length)),
+      label: "Total Power",
+      value: fmt(governors.reduce((a, g) => a + (g.power ?? 0), 0)),
     },
     {
       label: "Total Kill Points",
@@ -68,7 +94,42 @@ export default function DashboardPage() {
       {/* Kingdom Header */}
       <div className="flex items-end justify-between">
         <div>
-          <p className="text-sm text-muted-foreground uppercase tracking-wider">Kingdom Overview</p>
+          {editing ? (
+            <div className="flex items-center gap-2 mb-1">
+              <Input
+                type="number"
+                placeholder="Kingdom #"
+                value={editNumber}
+                onChange={(e) => setEditNumber(e.target.value)}
+                className="w-24 h-8 text-sm bg-card border-border"
+              />
+              <Input
+                placeholder="Kingdom name"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                className="w-48 h-8 text-sm bg-card border-border"
+              />
+              <Button size="sm" variant="ghost" onClick={saveEdit} disabled={updateKingdom.isPending}>
+                <Check className="h-4 w-4 text-green-500" />
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>
+                <X className="h-4 w-4 text-destructive" />
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <p className="text-sm text-muted-foreground uppercase tracking-wider">
+                {kingdom && kingdom.kingdom_number > 0
+                  ? `Kingdom #${kingdom.kingdom_number}${kingdom.kingdom_name ? ` — ${kingdom.kingdom_name}` : ""}`
+                  : "Kingdom Overview"}
+              </p>
+              {isAdmin && !kingdomLoading && (
+                <button onClick={startEdit} className="text-muted-foreground hover:text-foreground transition-colors">
+                  <Pencil className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+          )}
           <h1 className="font-display text-4xl font-bold text-foreground">
             Governor Dashboard
           </h1>

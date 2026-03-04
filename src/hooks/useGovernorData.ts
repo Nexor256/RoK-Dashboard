@@ -128,6 +128,7 @@ export function useLatestGovernorStats() {
         .select("*")
         .eq("snapshot_type", "general")
         .order("snapshot_date", { ascending: false })
+        .order("created_at", { ascending: false })
         .limit(1);
       if (snapError) throw snapError;
       if (!snapshots?.length) return { snapshot: null, governors: [] };

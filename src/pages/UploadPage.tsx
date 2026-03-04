@@ -123,41 +123,47 @@ export default function UploadPage() {
 
       if (snapError) throw snapError;
 
-      // Insert rows
-      if (uploadType === "general") {
-        const rows = parsedData.map((row) => ({
-          snapshot_id: snapshot.id,
-          governor_id: row.governor_id || null,
-          governor_name: row.governor_name || "",
-          alliance: row.alliance || "",
-          power: parseInt(row.power || "0", 10) || 0,
-          t1_kills: parseInt(row.t1_kills || "0", 10) || 0,
-          t2_kills: parseInt(row.t2_kills || "0", 10) || 0,
-          t3_kills: parseInt(row.t3_kills || "0", 10) || 0,
-          t4_kills: parseInt(row.t4_kills || "0", 10) || 0,
-          t5_kills: parseInt(row.t5_kills || "0", 10) || 0,
-          total_kills: parseInt(row.total_kills || "0", 10) || 0,
-          t45_kills: parseInt(row.t45_kills || "0", 10) || 0,
-          killpoints: parseInt(row.killpoints || "0", 10) || 0,
-          deaths: parseInt(row.deaths || "0", 10) || 0,
-          ranged: parseInt(row.ranged || "0", 10) || 0,
-          resource_gathered: parseInt(row.resource_gathered || "0", 10) || 0,
-          rss_assistance: parseInt(row.rss_assistance || "0", 10) || 0,
-          helps: parseInt(row.helps || "0", 10) || 0,
-          city_hall_level: parseInt(row.city_hall_level || "0", 10) || 0,
-        }));
-        const { error: insertError } = await supabase.from("governor_stats").insert(rows);
-        if (insertError) throw insertError;
-      } else {
-        const rows = parsedData.map((row) => ({
-          snapshot_id: snapshot.id,
-          governor_name: row.governor_name || "",
-          alliance: row.alliance || "",
-          kvk_kills: parseInt(row.kvk_kills || "0", 10) || 0,
-          kvk_deaths: parseInt(row.kvk_deaths || "0", 10) || 0,
-        }));
-        const { error: insertError } = await supabase.from("kvk_stats").insert(rows);
-        if (insertError) throw insertError;
+      // Insert rows — if this fails, roll back the snapshot
+      try {
+        if (uploadType === "general") {
+          const rows = parsedData.map((row) => ({
+            snapshot_id: snapshot.id,
+            governor_id: row.governor_id || null,
+            governor_name: row.governor_name || "",
+            alliance: row.alliance || "",
+            power: parseInt(row.power || "0", 10) || 0,
+            t1_kills: parseInt(row.t1_kills || "0", 10) || 0,
+            t2_kills: parseInt(row.t2_kills || "0", 10) || 0,
+            t3_kills: parseInt(row.t3_kills || "0", 10) || 0,
+            t4_kills: parseInt(row.t4_kills || "0", 10) || 0,
+            t5_kills: parseInt(row.t5_kills || "0", 10) || 0,
+            total_kills: parseInt(row.total_kills || "0", 10) || 0,
+            t45_kills: parseInt(row.t45_kills || "0", 10) || 0,
+            killpoints: parseInt(row.killpoints || "0", 10) || 0,
+            deaths: parseInt(row.deaths || "0", 10) || 0,
+            ranged: parseInt(row.ranged || "0", 10) || 0,
+            resource_gathered: parseInt(row.resource_gathered || "0", 10) || 0,
+            rss_assistance: parseInt(row.rss_assistance || "0", 10) || 0,
+            helps: parseInt(row.helps || "0", 10) || 0,
+            city_hall_level: parseInt(row.city_hall_level || "0", 10) || 0,
+          }));
+          const { error: insertError } = await supabase.from("governor_stats").insert(rows);
+          if (insertError) throw insertError;
+        } else {
+          const rows = parsedData.map((row) => ({
+            snapshot_id: snapshot.id,
+            governor_name: row.governor_name || "",
+            alliance: row.alliance || "",
+            kvk_kills: parseInt(row.kvk_kills || "0", 10) || 0,
+            kvk_deaths: parseInt(row.kvk_deaths || "0", 10) || 0,
+          }));
+          const { error: insertError } = await supabase.from("kvk_stats").insert(rows);
+          if (insertError) throw insertError;
+        }
+      } catch (insertErr) {
+        // Rollback: delete the orphan snapshot
+        await supabase.from("snapshots").delete().eq("id", snapshot.id);
+        throw insertErr;
       }
 
       setUploadResult({
@@ -168,7 +174,12 @@ export default function UploadPage() {
       setFileName("");
       setSnapshotLabel("");
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Upload failed";
+      const message =
+        err instanceof Error
+          ? err.message
+          : typeof err === "object" && err !== null && "message" in err
+            ? String((err as { message: unknown }).message)
+            : "Upload failed";
       setUploadResult({ success: false, message });
     } finally {
       setUploading(false);
