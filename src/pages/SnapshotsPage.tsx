@@ -8,6 +8,9 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
 import { ArrowUp, ArrowDown, Minus, Loader2 } from "lucide-react";
 
 function Delta({ value }: { value: number }) {
@@ -21,6 +24,7 @@ export default function SnapshotsPage() {
 
   const [snapA, setSnapA] = useState<string>("");
   const [snapB, setSnapB] = useState<string>("");
+  const [selectedGov, setSelectedGov] = useState<typeof comparison[number] | null>(null);
 
   // Auto-select latest two snapshots once loaded
   const resolvedSnapA = snapA || snapshots?.[snapshots.length - 2]?.id || "";
@@ -46,7 +50,11 @@ export default function SnapshotsPage() {
       return {
         id: gB.id,
         governor_name: gB.governor_name,
+        governor_id: gB.governor_id,
         alliance: gB.alliance,
+        power: gB.power ?? 0,
+        killpoints: gB.killpoints ?? 0,
+        deaths: gB.deaths ?? 0,
         powerA: gA?.power ?? 0,
         powerB: gB.power ?? 0,
         powerDelta: (gB.power ?? 0) - (gA?.power ?? 0),
@@ -137,6 +145,7 @@ export default function SnapshotsPage() {
                 <TableHeader>
                   <TableRow className="bg-muted/50 hover:bg-muted/50 border-b border-border">
                     <TableHead>Governor</TableHead>
+                    <TableHead>Alliance</TableHead>
                     <TableHead>Power (From)</TableHead>
                     <TableHead>Power (To)</TableHead>
                     <TableHead>Δ Power</TableHead>
@@ -150,8 +159,15 @@ export default function SnapshotsPage() {
                   {comparison.map((row) => (
                     <TableRow key={row.id} className="hover:bg-muted/30 transition-colors even:bg-muted/10">
                       <TableCell>
-                        <span className="font-medium">{row.governor_name}</span>
-                        <span className="ml-2 text-xs text-muted-foreground">[{row.alliance ?? "—"}]</span>
+                        <button
+                          onClick={() => setSelectedGov(row)}
+                          className="font-semibold text-primary hover:underline cursor-pointer text-left text-sm"
+                        >
+                          {row.governor_name}
+                        </button>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-muted-foreground text-sm">{row.alliance ?? "—"}</span>
                       </TableCell>
                       <TableCell>{fmt(row.powerA)}</TableCell>
                       <TableCell>{fmt(row.powerB)}</TableCell>
@@ -164,7 +180,7 @@ export default function SnapshotsPage() {
                   ))}
                   {!comparison.length && (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                         No governor data found for the selected snapshots.
                       </TableCell>
                     </TableRow>
@@ -175,6 +191,35 @@ export default function SnapshotsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Governor detail dialog */}
+      <Dialog open={!!selectedGov} onOpenChange={(open) => { if (!open) setSelectedGov(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl">{selectedGov?.governor_name}</DialogTitle>
+          </DialogHeader>
+          {selectedGov && (
+            <div className="grid grid-cols-2 gap-4 py-2">
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Governor ID</p>
+                <p className="font-semibold text-foreground">{selectedGov.governor_id ?? "—"}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Power</p>
+                <p className="font-semibold text-foreground">{fmt(selectedGov.power)}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Total Kill Points</p>
+                <p className="font-semibold text-primary">{fmt(selectedGov.killpoints)}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Deaths</p>
+                <p className="font-semibold text-foreground">{fmt(selectedGov.deaths)}</p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
