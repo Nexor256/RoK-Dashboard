@@ -21,6 +21,7 @@ export function useKvKWars() {
       if (error) throw error;
       return (data ?? []) as unknown as KvKWar[];
     },
+    staleTime: 5 * 60 * 1000,
   });
 }
 

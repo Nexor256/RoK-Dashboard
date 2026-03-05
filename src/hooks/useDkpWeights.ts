@@ -26,6 +26,7 @@ export function useDkpWeights() {
       const row = data as any;
       return { ...DEFAULT_WEIGHTS, ...(row?.dkp_weights ?? {}) };
     },
+    staleTime: 5 * 60 * 1000,
   });
 }
 

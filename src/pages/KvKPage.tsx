@@ -146,9 +146,12 @@ function computeGains(
   afterStats: GovernorStat[],
   weights: DkpWeights,
 ): Map<string, WarGains> {
+  const beforeMap = new Map<string, GovernorStat>();
+  for (const g of beforeStats) beforeMap.set(g.governor_name, g);
+
   const map = new Map<string, WarGains>();
   for (const gTo of afterStats) {
-    const gFrom = beforeStats.find((g) => g.governor_name === gTo.governor_name);
+    const gFrom = beforeMap.get(gTo.governor_name);
     const t4_gained = (gTo.t4_kills ?? 0) - (gFrom?.t4_kills ?? 0);
     const t5_gained = (gTo.t5_kills ?? 0) - (gFrom?.t5_kills ?? 0);
     const kills_gained = (gTo.total_kills ?? 0) - (gFrom?.total_kills ?? 0);
@@ -208,20 +211,32 @@ export default function KvKPage() {
 
   const { data: allStats, isLoading: statsLoading } = useGovernorStatsMulti(warSnapshotIds);
 
+  /* group stats by snapshot_id for O(1) lookups */
+  const statsBySnapshot = useMemo(() => {
+    const map = new Map<string, GovernorStat[]>();
+    if (!allStats) return map;
+    for (const s of allStats) {
+      let arr = map.get(s.snapshot_id);
+      if (!arr) { arr = []; map.set(s.snapshot_id, arr); }
+      arr.push(s);
+    }
+    return map;
+  }, [allStats]);
+
   /* per-war gains maps */
   const warGainsMaps = useMemo(() => {
     if (!allStats) return new Map<string, Map<string, WarGains>>();
     const result = new Map<string, Map<string, WarGains>>();
     for (const w of wars) {
       if (!w.snapshot_before_id || !w.snapshot_after_id) continue;
-      const before = allStats.filter((s) => s.snapshot_id === w.snapshot_before_id);
-      const after = allStats.filter((s) => s.snapshot_id === w.snapshot_after_id);
+      const before = statsBySnapshot.get(w.snapshot_before_id) ?? [];
+      const after = statsBySnapshot.get(w.snapshot_after_id) ?? [];
       if (before.length && after.length) {
         result.set(w.id, computeGains(before, after, weights));
       }
     }
     return result;
-  }, [allStats, wars, weights]);
+  }, [allStats, wars, weights, statsBySnapshot]);
 
   /* valid wars (those with both snapshots assigned and data computed) */
   const validWars = useMemo(
@@ -236,7 +251,7 @@ export default function KvKPage() {
 
     for (const w of validWars) {
       const gains = warGainsMaps.get(w.id)!;
-      const afterStats = allStats.filter((s) => s.snapshot_id === w.snapshot_after_id);
+      const afterStats = statsBySnapshot.get(w.snapshot_after_id!) ?? [];
 
       for (const gStat of afterStats) {
         if (!govMap.has(gStat.governor_name)) {
@@ -266,7 +281,7 @@ export default function KvKPage() {
     }
 
     return [...govMap.values()];
-  }, [validWars, warGainsMaps, allStats]);
+  }, [validWars, warGainsMaps, allStats, statsBySnapshot]);
 
   const alliances = useMemo(
     () => [...new Set(kvkRows.map((g) => g.alliance).filter(Boolean))],
@@ -445,7 +460,7 @@ export default function KvKPage() {
 
   /* ─── loading & empty states ───────────────────────────────── */
 
-  if (snapsLoading || warsLoading || tiersLoading) {
+  if (snapsLoading || warsLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

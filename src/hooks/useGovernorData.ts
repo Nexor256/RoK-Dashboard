@@ -71,6 +71,7 @@ export function useSnapshots(type?: "general" | "kvk") {
       if (error) throw error;
       return (data ?? []) as SnapshotRow[];
     },
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -99,12 +100,13 @@ export function useGovernorStatsMulti(snapshotIds: string[]) {
       if (!snapshotIds.length) return [];
       const { data, error } = await supabase
         .from("governor_stats")
-        .select("*")
+        .select("snapshot_id,governor_id,governor_name,alliance,power,t4_kills,t5_kills,total_kills,killpoints,deaths,resource_gathered,rss_assistance,helps")
         .in("snapshot_id", snapshotIds);
       if (error) throw error;
       return (data ?? []) as GovernorStat[];
     },
     enabled: snapshotIds.length > 0,
+    staleTime: 5 * 60 * 1000,
   });
 }
 

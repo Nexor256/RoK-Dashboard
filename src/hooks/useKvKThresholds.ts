@@ -22,6 +22,7 @@ export function useKvKThresholds() {
       // Sort ascending by min_power
       return tiers.sort((a, b) => a.min_power - b.min_power);
     },
+    staleTime: 5 * 60 * 1000,
   });
 }
 

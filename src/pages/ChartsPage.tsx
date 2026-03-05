@@ -41,20 +41,38 @@ export default function ChartsPage() {
 
   const data = useMemo(() => {
     if (!snapshots?.length || !allStats?.length) return [];
+
+    // Pre-group stats by snapshot_id for O(1) lookup
+    const bySnap = new Map<string, GovernorStat[]>();
+    for (const s of allStats) {
+      let arr = bySnap.get(s.snapshot_id);
+      if (!arr) { arr = []; bySnap.set(s.snapshot_id, arr); }
+      arr.push(s);
+    }
+
     return snapshots.map((snap) => {
-      const rows = allStats.filter((s) => s.snapshot_id === snap.id);
+      const rows = bySnap.get(snap.id) ?? [];
+      // Single-pass aggregation
+      let totalPower = 0, totalKillpoints = 0, totalT4Kills = 0, totalT5Kills = 0;
+      let totalKills = 0, totalDeaths = 0, totalResourceGathered = 0;
+      let totalRssAssistance = 0, totalHelps = 0;
+      for (const r of rows) {
+        totalPower += r.power ?? 0;
+        totalKillpoints += r.killpoints ?? 0;
+        totalT4Kills += r.t4_kills ?? 0;
+        totalT5Kills += r.t5_kills ?? 0;
+        totalKills += r.total_kills ?? 0;
+        totalDeaths += r.deaths ?? 0;
+        totalResourceGathered += r.resource_gathered ?? 0;
+        totalRssAssistance += r.rss_assistance ?? 0;
+        totalHelps += r.helps ?? 0;
+      }
       return {
         date: snap.snapshot_date,
         label: snap.label || snap.snapshot_date,
-        totalPower: rows.reduce((s, r) => s + (r.power ?? 0), 0),
-        totalKillpoints: rows.reduce((s, r) => s + (r.killpoints ?? 0), 0),
-        totalT4Kills: rows.reduce((s, r) => s + (r.t4_kills ?? 0), 0),
-        totalT5Kills: rows.reduce((s, r) => s + (r.t5_kills ?? 0), 0),
-        totalKills: rows.reduce((s, r) => s + (r.total_kills ?? 0), 0),
-        totalDeaths: rows.reduce((s, r) => s + (r.deaths ?? 0), 0),
-        totalResourceGathered: rows.reduce((s, r) => s + (r.resource_gathered ?? 0), 0),
-        totalRssAssistance: rows.reduce((s, r) => s + (r.rss_assistance ?? 0), 0),
-        totalHelps: rows.reduce((s, r) => s + (r.helps ?? 0), 0),
+        totalPower, totalKillpoints, totalT4Kills, totalT5Kills,
+        totalKills, totalDeaths, totalResourceGathered,
+        totalRssAssistance, totalHelps,
         governorCount: rows.length,
       } satisfies KingdomPoint;
     });
