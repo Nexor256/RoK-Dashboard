@@ -24,12 +24,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import GovernorProfileCard, { type KvKExtras } from "@/components/GovernorProfileCard";
 import {
   useSnapshots,
   useGovernorStatsMulti,
@@ -1117,122 +1112,26 @@ export default function KvKPage() {
             </CardContent>
           </Card>
 
-          {/* Governor detail dialog */}
-          <Dialog
-            open={!!selectedGov}
-            onOpenChange={(open) => {
-              if (!open) setSelectedGov(null);
-            }}
-          >
-            <DialogContent className="sm:max-w-lg">
-              <DialogHeader>
-                <DialogTitle className="text-xl">{selectedGov?.governor_name}</DialogTitle>
-              </DialogHeader>
-              {selectedGov && (
-                <div className="space-y-4 py-2">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <p className="text-sm text-muted-foreground">Governor ID</p>
-                      <p className="font-semibold text-foreground">
-                        {selectedGov.governor_id ?? "—"}
-                      </p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-sm text-muted-foreground">Power</p>
-                      <p className="font-semibold text-foreground">{fmt(selectedGov.power)}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-sm text-muted-foreground">Total Kill Points</p>
-                      <p className="font-semibold text-primary">{fmt(selectedGov.killpoints)}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-sm text-muted-foreground">Deaths</p>
-                      <p className="font-semibold text-foreground">{fmt(selectedGov.deaths)}</p>
-                    </div>
-                  </div>
-
-                  {/* Per-war breakdown in dialog */}
-                  {validWars.length > 0 && (
-                    <div className="border-t border-border pt-3 space-y-2">
-                      <p className="text-sm font-semibold text-muted-foreground">War Breakdown</p>
-                      {validWars.map((w, i) => {
-                        const wg = selectedGov.wars[w.id];
-                        return (
-                          <div key={w.id} className="flex justify-between items-center text-sm">
-                            <span className="flex items-center gap-2 text-muted-foreground">
-                              <span
-                                className="inline-block w-2 h-2 rounded-full"
-                                style={{ backgroundColor: warColor(i) }}
-                              />
-                              {w.name}
-                            </span>
-                            {wg ? (
-                              <span className="tabular-nums">
-                                <span className="font-semibold" style={{ color: warColor(i) }}>
-                                  {fmt(wg.dkp)}
-                                </span>
-                                <span className="text-muted-foreground text-xs ml-2">
-                                  T4: {fmt(wg.t4_gained)} · T5: {fmt(wg.t5_gained)} · K:{" "}
-                                  {fmt(wg.kills_gained)} · D: {fmt(wg.deaths_gained)}
-                                </span>
-                              </span>
-                            ) : (
-                              <span className="text-muted-foreground/50">—</span>
-                            )}
-                          </div>
-                        );
-                      })}
-                      <div className="flex justify-between items-center text-sm font-bold border-t border-border pt-2">
-                        <span>Total DKP</span>
-                        <span className="text-primary tabular-nums">
-                          {fmt(selectedGov.totalDkp)}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Threshold assessment */}
-                  {(() => {
-                    const tier = findTier(selectedGov.power, tiers);
-                    if (!tier) return null;
-                    const totalDeaths = Object.values(selectedGov.wars).reduce((s, w) => s + w.deaths_gained, 0);
-                    const dkpOk = selectedGov.totalDkp >= tier.min_dkp;
-                    const deathsOk = totalDeaths >= tier.min_deaths;
-                    return (
-                      <div className="border-t border-border pt-3 space-y-2">
-                        <p className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
-                          <Gauge className="h-4 w-4" /> Power Tier Requirements
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Tier: Power ≥ {fmt(tier.min_power)}
-                        </p>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className={`rounded-lg p-2 ${dkpOk ? "bg-emerald-500/10" : "bg-destructive/10"}`}>
-                            <p className="text-xs text-muted-foreground">Min DKP</p>
-                            <p className={`font-semibold ${dkpOk ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
-                              {fmt(selectedGov.totalDkp)} / {fmt(tier.min_dkp)}
-                            </p>
-                            <p className="text-xs mt-0.5">
-                              {dkpOk ? "✓ Passed" : "✗ Below minimum"}
-                            </p>
-                          </div>
-                          <div className={`rounded-lg p-2 ${deathsOk ? "bg-emerald-500/10" : "bg-destructive/10"}`}>
-                            <p className="text-xs text-muted-foreground">Min Deaths</p>
-                            <p className={`font-semibold ${deathsOk ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
-                              {fmt(totalDeaths)} / {fmt(tier.min_deaths)}
-                            </p>
-                            <p className="text-xs mt-0.5">
-                              {deathsOk ? "✓ Passed" : "✗ Below minimum"}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </div>
-              )}
-            </DialogContent>
-          </Dialog>
+          {/* Governor profile popup */}
+          <GovernorProfileCard
+            governor={selectedGov}
+            onClose={() => setSelectedGov(null)}
+            kvkData={
+              selectedGov
+                ? {
+                    wars: validWars.map((w, i) => ({
+                      id: w.id,
+                      name: w.name,
+                      color: warColor(i),
+                      gains: selectedGov.wars[w.id],
+                    })),
+                    totalDkp: selectedGov.totalDkp,
+                    tiers,
+                    power: selectedGov.power,
+                  }
+                : undefined
+            }
+          />
         </>
       )}
     </div>

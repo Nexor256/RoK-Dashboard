@@ -8,9 +8,7 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
+import GovernorProfileCard from "@/components/GovernorProfileCard";
 import { ArrowUp, ArrowDown, Minus, Loader2 } from "lucide-react";
 
 function Delta({ value }: { value: number }) {
@@ -48,10 +46,7 @@ export default function SnapshotsPage() {
     return statsB.map((gB) => {
       const gA = statsA.find((g) => g.governor_name === gB.governor_name);
       return {
-        id: gB.id,
-        governor_name: gB.governor_name,
-        governor_id: gB.governor_id,
-        alliance: gB.alliance,
+        ...gB,
         power: gB.power ?? 0,
         killpoints: gB.killpoints ?? 0,
         deaths: gB.deaths ?? 0,
@@ -192,34 +187,11 @@ export default function SnapshotsPage() {
         </CardContent>
       </Card>
 
-      {/* Governor detail dialog */}
-      <Dialog open={!!selectedGov} onOpenChange={(open) => { if (!open) setSelectedGov(null); }}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-xl">{selectedGov?.governor_name}</DialogTitle>
-          </DialogHeader>
-          {selectedGov && (
-            <div className="grid grid-cols-2 gap-4 py-2">
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Governor ID</p>
-                <p className="font-semibold text-foreground">{selectedGov.governor_id ?? "—"}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Power</p>
-                <p className="font-semibold text-foreground">{fmt(selectedGov.power)}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Total Kill Points</p>
-                <p className="font-semibold text-primary">{fmt(selectedGov.killpoints)}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Deaths</p>
-                <p className="font-semibold text-foreground">{fmt(selectedGov.deaths)}</p>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Governor profile popup */}
+      <GovernorProfileCard
+        governor={selectedGov}
+        onClose={() => setSelectedGov(null)}
+      />
     </div>
   );
 }

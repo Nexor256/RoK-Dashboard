@@ -100,12 +100,77 @@ export function useGovernorStatsMulti(snapshotIds: string[]) {
       if (!snapshotIds.length) return [];
       const { data, error } = await supabase
         .from("governor_stats")
-        .select("snapshot_id,governor_id,governor_name,alliance,power,t4_kills,t5_kills,total_kills,killpoints,deaths,resource_gathered,rss_assistance,helps")
+        .select("*")
         .in("snapshot_id", snapshotIds);
       if (error) throw error;
       return (data ?? []) as GovernorStat[];
     },
     enabled: snapshotIds.length > 0,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** Fetch full history for a single governor across all snapshots (by governor_id) */
+export function useGovernorHistory(governorId: string | null) {
+  return useQuery({
+    queryKey: ["governor_history", governorId],
+    queryFn: async () => {
+      if (!governorId) return [];
+      const { data, error } = await supabase
+        .from("governor_stats")
+        .select("*, snapshots!inner(snapshot_date, label, snapshot_type)")
+        .eq("governor_id", governorId)
+        .order("snapshot_id");
+      if (error) throw error;
+      // Flatten the joined snapshot fields and sort by date
+      return ((data ?? []) as (GovernorStat & { snapshots: { snapshot_date: string; label: string | null; snapshot_type: string } })[])
+        .map((row) => ({
+          ...row,
+          snapshot_date: row.snapshots.snapshot_date,
+          snapshot_label: row.snapshots.label,
+          snapshot_type: row.snapshots.snapshot_type,
+        }))
+        .sort((a, b) => a.snapshot_date.localeCompare(b.snapshot_date));
+    },
+    enabled: !!governorId,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export type GovernorHistoryPoint = GovernorStat & {
+  snapshot_date: string;
+  snapshot_label: string | null;
+  snapshot_type: string;
+};
+
+/** Fetch the 2nd-latest general snapshot's governor stats (for trend deltas) */
+export function usePreviousGovernorStats() {
+  return useQuery({
+    queryKey: ["previous_governor_stats"],
+    queryFn: async () => {
+      const { data: snapshots, error: snapError } = await supabase
+        .from("snapshots")
+        .select("*")
+        .eq("snapshot_type", "general")
+        .order("snapshot_date", { ascending: false })
+        .order("created_at", { ascending: false })
+        .limit(2);
+      if (snapError) throw snapError;
+      if (!snapshots || snapshots.length < 2) return { snapshot: null, governors: [] };
+
+      const snapshot = snapshots[1] as SnapshotRow;
+
+      const { data: stats, error: statsError } = await supabase
+        .from("governor_stats")
+        .select("*")
+        .eq("snapshot_id", snapshot.id);
+      if (statsError) throw statsError;
+
+      return {
+        snapshot,
+        governors: (stats ?? []) as GovernorStat[],
+      };
+    },
     staleTime: 5 * 60 * 1000,
   });
 }
