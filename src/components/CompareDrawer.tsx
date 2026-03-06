@@ -20,18 +20,6 @@ import {
   Legend,
 } from "recharts";
 
-const TOOLTIP_STYLE = {
-  contentStyle: {
-    backgroundColor: "hsl(var(--card))",
-    border: "1px solid hsl(var(--border))",
-    borderRadius: 8,
-    color: "hsl(var(--foreground))",
-    fontSize: 12,
-  },
-  labelStyle: { color: "hsl(var(--foreground))", fontWeight: 600 },
-  itemStyle: { color: "hsl(var(--muted-foreground))" },
-};
-
 const COLORS = ["#6366f1", "#f59e0b", "#10b981", "#ef4444"];
 
 /* ─── Floating Tray ─────────────────────────────────────────── */
@@ -146,7 +134,7 @@ function StatsBarChart({ governors }: { governors: GovernorProfileGov[] }) {
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
           <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={(v: number) => fmt(v)} />
           <YAxis type="category" dataKey="stat" tick={{ fontSize: 11 }} width={65} />
-          <Tooltip formatter={(v: number) => fmt(v)} {...TOOLTIP_STYLE} />
+          <Tooltip formatter={(v: number) => fmt(v)} />
           <Legend wrapperStyle={{ fontSize: 11 }} />
           {governors.map((g: any, i: number) => (
             <Bar key={g.governor_id} dataKey={g.governor_name} fill={COLORS[i]} radius={[0, 3, 3, 0]} />
@@ -232,7 +220,7 @@ function OverlaidLineChart({
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
           <XAxis dataKey="date" tick={{ fontSize: 10 }} />
           <YAxis tick={{ fontSize: 10 }} tickFormatter={(v: number) => fmt(v)} />
-          <Tooltip formatter={(v: number) => fmt(v)} {...TOOLTIP_STYLE} />
+          <Tooltip formatter={(v: number) => fmt(v)} />
           <Legend wrapperStyle={{ fontSize: 11 }} />
           {governors.map((g: any, i: number) => (
             <Line
