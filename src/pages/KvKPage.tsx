@@ -25,6 +25,8 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import GovernorProfileCard, { type KvKExtras } from "@/components/GovernorProfileCard";
+import CompareContextMenuContent from "@/components/CompareContextMenuContent";
+import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu";
 import {
   useSnapshots,
   useGovernorStatsMulti,
@@ -985,12 +987,17 @@ export default function KvKPage() {
                         >
                           <TableCell className="text-muted-foreground text-xs">{i + 1}</TableCell>
                           <TableCell>
-                            <button
-                              onClick={() => setSelectedGov(g)}
-                              className="font-semibold text-primary hover:underline cursor-pointer text-left text-sm"
-                            >
-                              {g.governor_name}
-                            </button>
+                            <ContextMenu>
+                              <ContextMenuTrigger asChild>
+                                <button
+                                  onClick={() => setSelectedGov(g)}
+                                  className="font-semibold text-primary hover:underline cursor-pointer text-left text-sm"
+                                >
+                                  {g.governor_name}
+                                </button>
+                              </ContextMenuTrigger>
+                              <CompareContextMenuContent gov={g} onViewProfile={() => setSelectedGov(g)} />
+                            </ContextMenu>
                           </TableCell>
                           <TableCell className="text-muted-foreground text-sm">
                             {g.alliance ?? "—"}

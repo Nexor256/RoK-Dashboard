@@ -19,6 +19,8 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import GovernorProfileCard from "@/components/GovernorProfileCard";
+import CompareContextMenuContent from "@/components/CompareContextMenuContent";
+import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { ArrowUpDown, ChevronLeft, ChevronRight, Download, Search, Loader2, TrendingUp, TrendingDown, Columns3, Palette, BookmarkPlus, Bookmark, X } from "lucide-react";
 
 type SortKey =
@@ -451,12 +453,17 @@ export default function RankingsPage() {
                     {page * perPage + i + 1}
                   </TableCell>
                   <TableCell>
-                    <button
-                      onClick={() => setSelectedGov(g)}
-                      className="font-semibold text-primary hover:underline cursor-pointer text-left text-sm"
-                    >
-                      {g.governor_name}
-                    </button>
+                    <ContextMenu>
+                      <ContextMenuTrigger asChild>
+                        <button
+                          onClick={() => setSelectedGov(g)}
+                          className="font-semibold text-primary hover:underline cursor-pointer text-left text-sm"
+                        >
+                          {g.governor_name}
+                        </button>
+                      </ContextMenuTrigger>
+                      <CompareContextMenuContent gov={g} onViewProfile={() => setSelectedGov(g)} />
+                    </ContextMenu>
                   </TableCell>
                   {visibleKeys.includes("alliance") && (
                     <TableCell>

@@ -9,6 +9,8 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import GovernorProfileCard from "@/components/GovernorProfileCard";
+import CompareContextMenuContent from "@/components/CompareContextMenuContent";
+import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { ArrowUp, ArrowDown, Minus, Loader2 } from "lucide-react";
 
 function Delta({ value }: { value: number }) {
@@ -154,12 +156,17 @@ export default function SnapshotsPage() {
                   {comparison.map((row) => (
                     <TableRow key={row.id} className="hover:bg-muted/30 transition-colors even:bg-muted/10">
                       <TableCell>
-                        <button
-                          onClick={() => setSelectedGov(row)}
-                          className="font-semibold text-primary hover:underline cursor-pointer text-left text-sm"
-                        >
-                          {row.governor_name}
-                        </button>
+                        <ContextMenu>
+                          <ContextMenuTrigger asChild>
+                            <button
+                              onClick={() => setSelectedGov(row)}
+                              className="font-semibold text-primary hover:underline cursor-pointer text-left text-sm"
+                            >
+                              {row.governor_name}
+                            </button>
+                          </ContextMenuTrigger>
+                          <CompareContextMenuContent gov={row} onViewProfile={() => setSelectedGov(row)} />
+                        </ContextMenu>
                       </TableCell>
                       <TableCell>
                         <span className="text-muted-foreground text-sm">{row.alliance ?? "—"}</span>

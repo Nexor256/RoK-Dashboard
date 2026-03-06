@@ -26,6 +26,18 @@ import {
 } from "recharts";
 import { findTier, type PowerTier } from "@/hooks/useKvKThresholds";
 
+const TOOLTIP_STYLE = {
+  contentStyle: {
+    backgroundColor: "hsl(var(--card))",
+    border: "1px solid hsl(var(--border))",
+    borderRadius: 8,
+    color: "hsl(var(--foreground))",
+    fontSize: 12,
+  },
+  labelStyle: { color: "hsl(var(--foreground))", fontWeight: 600 },
+  itemStyle: { color: "hsl(var(--muted-foreground))" },
+};
+
 /* ─── KvK data passed from KvKPage ─────────────────────────── */
 
 export interface WarGainsInfo {
@@ -312,7 +324,7 @@ function TrendsTab({
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis dataKey="date" tick={{ fontSize: 10 }} />
             <YAxis tick={{ fontSize: 10 }} tickFormatter={(v: number) => fmt(v)} />
-            <Tooltip formatter={(v: number) => fmt(v)} />
+            <Tooltip formatter={(v: number) => fmt(v)} {...TOOLTIP_STYLE} />
             <Line
               type="monotone"
               dataKey="Power"
@@ -334,7 +346,7 @@ function TrendsTab({
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis dataKey="date" tick={{ fontSize: 10 }} />
             <YAxis tick={{ fontSize: 10 }} tickFormatter={(v: number) => fmt(v)} />
-            <Tooltip formatter={(v: number) => fmt(v)} />
+            <Tooltip formatter={(v: number) => fmt(v)} {...TOOLTIP_STYLE} />
             <Legend wrapperStyle={{ fontSize: 11 }} />
             <Line type="monotone" dataKey="T4" stroke="#f59e0b" strokeWidth={2} dot={{ r: 2 }} />
             <Line type="monotone" dataKey="T5" stroke="#ef4444" strokeWidth={2} dot={{ r: 2 }} />

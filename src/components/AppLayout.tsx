@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useTheme } from "@/hooks/useTheme";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { CompareProvider } from "@/hooks/useCompare";
+import CompareDrawer, { CompareTray } from "@/components/CompareDrawer";
 
 const navItems = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -62,6 +64,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   );
 
   return (
+    <CompareProvider>
     <div className="min-h-screen flex flex-col">
       <header className="sticky top-0 z-50 border-b border-border/60 glass px-4 sm:px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2.5 sm:gap-3">
@@ -132,6 +135,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       </header>
       <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto w-full">{children}</main>
+      <CompareDrawer />
+      <CompareTray />
     </div>
+    </CompareProvider>
   );
 }
