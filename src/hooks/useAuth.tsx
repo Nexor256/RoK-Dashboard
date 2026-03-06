@@ -43,10 +43,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Auto-create profile if it doesn't exist
     if (!profileData) {
-      const displayName = userMeta?.display_name || userEmail?.split("@")[0] || "User";
+      const displayName = userMeta?.display_name || userMeta?.full_name || userMeta?.name || userEmail?.split("@")[0] || "User";
+      const avatarUrl = userMeta?.avatar_url || null;
       const { data: newProfile } = await supabase
         .from("profiles")
-        .insert({ user_id: userId, display_name: displayName })
+        .insert({ user_id: userId, display_name: displayName, avatar_url: avatarUrl })
         .select()
         .single();
       profileData = (newProfile as Profile) || null;

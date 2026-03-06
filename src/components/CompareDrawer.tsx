@@ -22,6 +22,28 @@ import {
 
 const COLORS = ["#6366f1", "#f59e0b", "#10b981", "#ef4444"];
 
+/* ─── Custom Tooltip ─────────────────────────────────────────── */
+
+function ChartTooltip({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded-lg border border-border/60 bg-popover px-3 py-2 shadow-xl">
+      <p className="text-xs font-semibold text-foreground mb-1.5">{label}</p>
+      <div className="space-y-1">
+        {payload.map((entry: any) => (
+          <div key={entry.dataKey} className="flex items-center justify-between gap-4 text-xs">
+            <span className="flex items-center gap-1.5 text-muted-foreground">
+              <span className="h-2 w-2 rounded-full inline-block" style={{ backgroundColor: entry.color }} />
+              {entry.name}
+            </span>
+            <span className="font-medium tabular-nums text-foreground">{fmt(entry.value)}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ─── Floating Tray ─────────────────────────────────────────── */
 
 export function CompareTray() {
@@ -134,7 +156,7 @@ function StatsBarChart({ governors }: { governors: GovernorProfileGov[] }) {
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
           <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={(v: number) => fmt(v)} />
           <YAxis type="category" dataKey="stat" tick={{ fontSize: 11 }} width={65} />
-          <Tooltip formatter={(v: number) => fmt(v)} />
+          <Tooltip content={<ChartTooltip />} />
           <Legend wrapperStyle={{ fontSize: 11 }} />
           {governors.map((g: any, i: number) => (
             <Bar key={g.governor_id} dataKey={g.governor_name} fill={COLORS[i]} radius={[0, 3, 3, 0]} />
@@ -220,7 +242,7 @@ function OverlaidLineChart({
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
           <XAxis dataKey="date" tick={{ fontSize: 10 }} />
           <YAxis tick={{ fontSize: 10 }} tickFormatter={(v: number) => fmt(v)} />
-          <Tooltip formatter={(v: number) => fmt(v)} />
+          <Tooltip content={<ChartTooltip />} />
           <Legend wrapperStyle={{ fontSize: 11 }} />
           {governors.map((g: any, i: number) => (
             <Line

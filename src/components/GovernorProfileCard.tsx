@@ -24,6 +24,26 @@ import {
   CartesianGrid,
   Legend,
 } from "recharts";
+
+function ChartTooltip({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded-lg border border-border/60 bg-popover px-3 py-2 shadow-xl">
+      <p className="text-xs font-semibold text-foreground mb-1.5">{label}</p>
+      <div className="space-y-1">
+        {payload.map((entry: any) => (
+          <div key={entry.dataKey} className="flex items-center justify-between gap-4 text-xs">
+            <span className="flex items-center gap-1.5 text-muted-foreground">
+              <span className="h-2 w-2 rounded-full inline-block" style={{ backgroundColor: entry.color }} />
+              {entry.name}
+            </span>
+            <span className="font-medium tabular-nums text-foreground">{fmt(entry.value)}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 import { findTier, type PowerTier } from "@/hooks/useKvKThresholds";
 
 /* ─── KvK data passed from KvKPage ─────────────────────────── */
@@ -312,7 +332,7 @@ function TrendsTab({
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis dataKey="date" tick={{ fontSize: 10 }} />
             <YAxis tick={{ fontSize: 10 }} tickFormatter={(v: number) => fmt(v)} />
-            <Tooltip formatter={(v: number) => fmt(v)} />
+            <Tooltip content={<ChartTooltip />} />
             <Line
               type="monotone"
               dataKey="Power"
@@ -334,7 +354,7 @@ function TrendsTab({
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis dataKey="date" tick={{ fontSize: 10 }} />
             <YAxis tick={{ fontSize: 10 }} tickFormatter={(v: number) => fmt(v)} />
-            <Tooltip formatter={(v: number) => fmt(v)} />
+            <Tooltip content={<ChartTooltip />} />
             <Legend wrapperStyle={{ fontSize: 11 }} />
             <Line type="monotone" dataKey="T4" stroke="#f59e0b" strokeWidth={2} dot={{ r: 2 }} />
             <Line type="monotone" dataKey="T5" stroke="#ef4444" strokeWidth={2} dot={{ r: 2 }} />
