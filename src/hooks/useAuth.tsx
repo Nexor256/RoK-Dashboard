@@ -13,7 +13,10 @@ interface AuthContextType {
   session: Session | null;
   user: User | null;
   profile: Profile | null;
+  governorId: string | null;
   isAdmin: boolean;
+  isR4: boolean;
+  isPrivileged: boolean;
   loading: boolean;
   signOut: () => Promise<void>;
 }
@@ -22,7 +25,10 @@ const AuthContext = createContext<AuthContextType>({
   session: null,
   user: null,
   profile: null,
+  governorId: null,
   isAdmin: false,
+  isR4: false,
+  isPrivileged: false,
   loading: true,
   signOut: async () => {},
 });
@@ -31,12 +37,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isR4, setIsR4] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const fetchProfileAndRole = async (userId: string, userEmail?: string, userMeta?: any) => {
-    const [profileRes, roleRes] = await Promise.all([
+    const [profileRes, rolesRes] = await Promise.all([
       supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle(),
-      supabase.from("user_roles").select("role").eq("user_id", userId).eq("role", "admin").maybeSingle(),
+      supabase.from("user_roles").select("role").eq("user_id", userId),
     ]);
 
     let profileData = profileRes.data as Profile | null;
@@ -55,7 +62,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     setProfile(profileData);
 
-    setIsAdmin(!!roleRes.data);
+    const roles = (rolesRes.data || []).map((r: { role: string }) => r.role);
+    setIsAdmin(roles.includes("admin"));
+    setIsR4(roles.includes("r4"));
   };
 
   useEffect(() => {
@@ -67,6 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else {
           setProfile(null);
           setIsAdmin(false);
+          setIsR4(false);
         }
         setLoading(false);
       }
@@ -88,7 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ session, user: session?.user ?? null, profile, isAdmin, loading, signOut }}>
+    <AuthContext.Provider value={{ session, user: session?.user ?? null, profile, governorId: session?.user?.email?.split("@")[0] ?? null, isAdmin, isR4, isPrivileged: isAdmin || isR4, loading, signOut }}>
       {children}
     </AuthContext.Provider>
   );

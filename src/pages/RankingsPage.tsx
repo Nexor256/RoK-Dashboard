@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useLatestGovernorStats, usePreviousGovernorStats, type GovernorStat } from "@/hooks/useGovernorData";
 import { useKvKThresholds, findTier } from "@/hooks/useKvKThresholds";
 import { useUserPreferences, useUpdateUserPreferences, type FilterPreset } from "@/hooks/useUserPreferences";
@@ -20,6 +21,8 @@ import {
 } from "@/components/ui/dialog";
 import GovernorProfileCard from "@/components/GovernorProfileCard";
 import CompareContextMenuContent from "@/components/CompareContextMenuContent";
+import { useAuth } from "@/hooks/useAuth";
+import { Badge } from "@/components/ui/badge";
 import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { ArrowUpDown, ChevronLeft, ChevronRight, Download, Search, Loader2, TrendingUp, TrendingDown, Columns3, Palette, BookmarkPlus, Bookmark, X } from "lucide-react";
 
@@ -128,6 +131,7 @@ export default function RankingsPage() {
   const governors = data?.governors ?? [];
   const { data: prevData } = usePreviousGovernorStats();
   const { data: tiers } = useKvKThresholds();
+  const { governorId } = useAuth();
   const { data: prefs } = useUserPreferences();
   const updatePrefs = useUpdateUserPreferences();
 
@@ -143,9 +147,12 @@ export default function RankingsPage() {
     return map;
   }, [prevData]);
 
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialSort = (searchParams.get("sort") as SortKey) || "power";
+
   const [search, setSearch] = useState("");
   const [allianceFilter, setAllianceFilter] = useState("all");
-  const [sortKey, setSortKey] = useState<SortKey>("power");
+  const [sortKey, setSortKey] = useState<SortKey>(initialSort);
   const [sortAsc, setSortAsc] = useState(false);
   const [page, setPage] = useState(0);
   const [perPage, setPerPage] = useState(10);
@@ -155,6 +162,14 @@ export default function RankingsPage() {
   const [showSavePreset, setShowSavePreset] = useState(false);
   const [presetName, setPresetName] = useState("");
   const [activePreset, setActivePreset] = useState<string>("");
+
+  // Clear the ?sort param after consuming it
+  useEffect(() => {
+    if (searchParams.has("sort")) {
+      searchParams.delete("sort");
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, []);
 
   // Sync column visibility from preferences on load
   useEffect(() => {
@@ -260,7 +275,7 @@ export default function RankingsPage() {
   }
 
   function loadPreset(name: string) {
-    if (!name) {
+    if (!name || name === "default") {
       // Reset to default
       setSearch("");
       setAllianceFilter("all");
@@ -423,7 +438,7 @@ export default function RankingsPage() {
       {/* Table */}
       <Card className="border-border/60 overflow-hidden">
         <div className="overflow-x-auto">
-          <Table className="min-w-[900px]">
+          <Table>
             <TableHeader>
               <TableRow className="bg-muted/50 hover:bg-muted/50 border-b border-border">
                 <TableHead className="w-10 text-center">#</TableHead>
@@ -447,12 +462,15 @@ export default function RankingsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paged.map((g, i) => (
-                <TableRow key={g.id} className="hover:bg-muted/30 transition-colors even:bg-muted/10">
+              {paged.map((g, i) => {
+                const isMe = !!governorId && g.governor_id === governorId;
+                return (
+                <TableRow key={g.id} className={isMe ? "hover:bg-primary/10 transition-colors border-l-2 border-l-primary bg-primary/5" : "hover:bg-muted/30 transition-colors even:bg-muted/10"}>
                   <TableCell className="text-center text-muted-foreground text-xs font-medium">
                     {page * perPage + i + 1}
                   </TableCell>
                   <TableCell>
+                    <div className="flex items-center gap-1.5">
                     <ContextMenu>
                       <ContextMenuTrigger asChild>
                         <button
@@ -464,6 +482,8 @@ export default function RankingsPage() {
                       </ContextMenuTrigger>
                       <CompareContextMenuContent gov={g} onViewProfile={() => setSelectedGov(g)} />
                     </ContextMenu>
+                    {isMe && <Badge className="text-[10px] px-1.5 py-0 leading-4">You</Badge>}
+                    </div>
                   </TableCell>
                   {visibleKeys.includes("alliance") && (
                     <TableCell>
@@ -552,7 +572,8 @@ export default function RankingsPage() {
                     );
                   })()}
                 </TableRow>
-              ))}
+              );
+              })}
             </TableBody>
           </Table>
         </div>

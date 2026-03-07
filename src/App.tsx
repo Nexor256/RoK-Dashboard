@@ -6,9 +6,47 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import AppLayout from "@/components/AppLayout";
 import { Loader2 } from "lucide-react";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, Component, type ReactNode } from "react";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
+
+/* ─── Error Boundary ─────────────────────────────────────────── */
+
+class ErrorBoundary extends Component<
+  { children: ReactNode },
+  { error: Error | null }
+> {
+  state = { error: null as Error | null };
+
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="min-h-screen flex items-center justify-center p-8">
+          <div className="max-w-lg space-y-4 text-center">
+            <h1 className="text-2xl font-bold text-destructive">Something went wrong</h1>
+            <pre className="text-left text-xs bg-muted rounded-lg p-4 overflow-auto max-h-64 whitespace-pre-wrap">
+              {this.state.error.message}
+            </pre>
+            <button
+              className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium"
+              onClick={() => {
+                this.setState({ error: null });
+                window.location.reload();
+              }}
+            >
+              Reload
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const DashboardPage = lazy(() => import("@/pages/DashboardPage"));
 const RankingsPage = lazy(() => import("@/pages/RankingsPage"));
@@ -18,7 +56,6 @@ const KvKPage = lazy(() => import("@/pages/KvKPage"));
 const UploadPage = lazy(() => import("@/pages/UploadPage"));
 const ManageUsersPage = lazy(() => import("@/pages/ManageUsersPage"));
 const AuthPage = lazy(() => import("@/pages/AuthPage"));
-const ResetPasswordPage = lazy(() => import("@/pages/ResetPasswordPage"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -30,7 +67,7 @@ const PageSpinner = () => (
 );
 
 function ProtectedRoutes() {
-  const { user, loading, isAdmin } = useAuth();
+  const { user, loading, isAdmin, isPrivileged } = useAuth();
 
   if (loading) {
     return (
@@ -51,7 +88,7 @@ function ProtectedRoutes() {
           <Route path="/charts" element={<ChartsPage />} />
           <Route path="/snapshots" element={<SnapshotsPage />} />
           <Route path="/kvk" element={<KvKPage />} />
-          <Route path="/upload" element={isAdmin ? <UploadPage /> : <Navigate to="/" replace />} />
+          <Route path="/upload" element={isPrivileged ? <UploadPage /> : <Navigate to="/" replace />} />
           <Route path="/manage-users" element={isAdmin ? <ManageUsersPage /> : <Navigate to="/" replace />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
@@ -69,6 +106,7 @@ function AuthGate() {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
+    <ErrorBoundary>
     <TooltipProvider>
       <Toaster />
       <Sonner />
@@ -77,7 +115,6 @@ const App = () => (
           <Suspense fallback={<PageSpinner />}>
             <Routes>
               <Route path="/auth" element={<AuthGate />} />
-              <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/*" element={<ProtectedRoutes />} />
             </Routes>
           </Suspense>
@@ -86,6 +123,7 @@ const App = () => (
       <Analytics />
       <SpeedInsights />
     </TooltipProvider>
+    </ErrorBoundary>
   </QueryClientProvider>
 );
 

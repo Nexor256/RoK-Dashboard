@@ -46,7 +46,9 @@ export default function SnapshotsPage() {
     const statsB = allStats.filter((s) => s.snapshot_id === resolvedSnapB);
 
     return statsB.map((gB) => {
-      const gA = statsA.find((g) => g.governor_name === gB.governor_name);
+      const gA = gB.governor_id
+        ? statsA.find((g) => g.governor_id === gB.governor_id)
+        : statsA.find((g) => g.governor_name === gB.governor_name);
       return {
         ...gB,
         power: gB.power ?? 0,

@@ -12,6 +12,11 @@ import {
   Line,
   BarChart,
   Bar,
+  RadarChart,
+  Radar,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
   XAxis,
   YAxis,
   Tooltip,
@@ -114,6 +119,7 @@ export default function CompareDrawer() {
             </p>
           ) : (
             <>
+              <RadarCompareChart governors={compareSet} />
               <StatsBarChart governors={compareSet} />
               <HistoryCharts governors={compareSet} />
             </>
@@ -121,6 +127,75 @@ export default function CompareDrawer() {
         </div>
       </SheetContent>
     </Sheet>
+  );
+}
+
+/* ─── Radar Chart (normalized shape comparison) ──────────────── */
+
+function RadarCompareChart({ governors }: { governors: GovernorProfileGov[] }) {
+  const data = useMemo(() => {
+    // Find the max for each stat across all governors to normalize to 0-100%
+    const maxes: Record<string, number> = {};
+    for (const { key } of STAT_KEYS) {
+      maxes[key] = Math.max(1, ...governors.map((g: any) => (g as any)[key] ?? 0));
+    }
+
+    return STAT_KEYS.map(({ key, label }) => {
+      const row: Record<string, string | number> = { stat: label };
+      governors.forEach((g: any) => {
+        const raw = (g as any)[key] ?? 0;
+        row[g.governor_name] = Math.round((raw / maxes[key]) * 100);
+      });
+      return row;
+    });
+  }, [governors]);
+
+  return (
+    <div>
+      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+        Shape Comparison
+      </p>
+      <ResponsiveContainer width="100%" height={300}>
+        <RadarChart data={data} cx="50%" cy="50%" outerRadius="75%">
+          <PolarGrid stroke="hsl(var(--border))" />
+          <PolarAngleAxis dataKey="stat" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+          <PolarRadiusAxis tick={false} axisLine={false} domain={[0, 100]} />
+          {governors.map((g: any, i: number) => (
+            <Radar
+              key={g.governor_id}
+              name={g.governor_name}
+              dataKey={g.governor_name}
+              stroke={COLORS[i]}
+              fill={COLORS[i]}
+              fillOpacity={0.15}
+              strokeWidth={2}
+            />
+          ))}
+          <Legend wrapperStyle={{ fontSize: 11 }} />
+          <Tooltip
+            content={({ active, payload, label }: any) => {
+              if (!active || !payload?.length) return null;
+              return (
+                <div className="rounded-lg border border-border/60 bg-popover px-3 py-2 shadow-xl">
+                  <p className="text-xs font-semibold text-foreground mb-1.5">{label}</p>
+                  <div className="space-y-1">
+                    {payload.map((entry: any) => (
+                      <div key={entry.dataKey} className="flex items-center justify-between gap-4 text-xs">
+                        <span className="flex items-center gap-1.5 text-muted-foreground">
+                          <span className="h-2 w-2 rounded-full inline-block" style={{ backgroundColor: entry.color }} />
+                          {entry.name}
+                        </span>
+                        <span className="font-medium tabular-nums text-foreground">{entry.value}%</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            }}
+          />
+        </RadarChart>
+      </ResponsiveContainer>
+    </div>
   );
 }
 
@@ -212,7 +287,7 @@ function mergeHistories(
     hist.forEach((h) => {
       const date = h.snapshot_label || h.snapshot_date;
       if (!dateMap.has(date)) dateMap.set(date, { date });
-      dateMap.get(date)![g.governor_name] = (h as any)[key] ?? 0;
+      dateMap.get(date)![g.governor_id || g.governor_name] = (h as any)[key] ?? 0;
     });
   });
 
@@ -248,7 +323,8 @@ function OverlaidLineChart({
             <Line
               key={g.governor_id}
               type="monotone"
-              dataKey={g.governor_name}
+              dataKey={g.governor_id || g.governor_name}
+              name={g.governor_name}
               stroke={COLORS[i]}
               strokeWidth={2}
               dot={{ r: 2 }}

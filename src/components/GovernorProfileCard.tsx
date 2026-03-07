@@ -9,14 +9,23 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import {
   useGovernorHistory,
-  type GovernorStat,
   type GovernorHistoryPoint,
 } from "@/hooks/useGovernorData";
 import { fmt, computeRanks, type RankEntry } from "@/lib/utils";
-import { Loader2, TrendingUp, Hash, History, Swords, Gauge } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { Loader2, TrendingUp, Hash, Swords, Gauge } from "lucide-react";
+import { useKvKWars } from "@/hooks/useKvKWars";
+import {
+  useGovernorStatsMulti,
+  type GovernorStat,
+} from "@/hooks/useGovernorData";
+import { useDkpWeights, DEFAULT_WEIGHTS, type DkpWeights } from "@/hooks/useDkpWeights";
+import { useKvKThresholds } from "@/hooks/useKvKThresholds";
 import {
   LineChart,
   Line,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   Tooltip,
@@ -100,6 +109,7 @@ export default function GovernorProfileCard({
   kvkData,
   onClose,
 }: GovernorProfileCardProps) {
+  const { governorId } = useAuth();
   const { data: history, isLoading: historyLoading } = useGovernorHistory(
     governor?.governor_id ?? null,
   );
@@ -109,22 +119,85 @@ export default function GovernorProfileCard({
     return computeRanks(allGovernors, governor.governor_id);
   }, [governor?.governor_id, allGovernors]);
 
-  const allianceChanges = useMemo(() => {
-    if (!history || history.length < 2) return [];
-    const changes: { date: string; from: string; to: string }[] = [];
-    for (let i = 1; i < history.length; i++) {
-      const prev = history[i - 1].alliance ?? "—";
-      const curr = history[i].alliance ?? "—";
-      if (prev !== curr) {
-        changes.push({
-          date: history[i].snapshot_date,
-          from: prev,
-          to: curr,
-        });
-      }
+  /* ── Self-fetch KvK data when not provided via prop ── */
+  const { data: wars = [] } = useKvKWars();
+  const { data: weights = DEFAULT_WEIGHTS } = useDkpWeights();
+  const { data: tiers = [] } = useKvKThresholds();
+
+  const warSnapshotIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const w of wars) {
+      if (w.snapshot_before_id) ids.add(w.snapshot_before_id);
+      if (w.snapshot_after_id) ids.add(w.snapshot_after_id);
     }
-    return changes;
-  }, [history]);
+    return [...ids];
+  }, [wars]);
+
+  const { data: allWarStats } = useGovernorStatsMulti(warSnapshotIds);
+
+  const selfKvkData = useMemo<KvKExtras | undefined>(() => {
+    if (!governor || !allWarStats?.length) return undefined;
+    const govKey = governor.governor_id || governor.governor_name;
+
+    const statsBySnap = new Map<string, GovernorStat[]>();
+    for (const s of allWarStats) {
+      let arr = statsBySnap.get(s.snapshot_id);
+      if (!arr) { arr = []; statsBySnap.set(s.snapshot_id, arr); }
+      arr.push(s);
+    }
+
+    const WAR_COLORS = [
+      "hsl(221, 83%, 53%)", "hsl(142, 71%, 45%)", "hsl(38, 92%, 50%)",
+      "hsl(0, 84%, 60%)", "hsl(280, 68%, 60%)", "hsl(190, 90%, 50%)",
+    ];
+
+    let totalDkp = 0;
+    const warResults: KvKExtras["wars"] = [];
+    let colorIdx = 0;
+
+    for (const w of wars) {
+      if (!w.snapshot_before_id || !w.snapshot_after_id) { colorIdx++; continue; }
+      const before = statsBySnap.get(w.snapshot_before_id) ?? [];
+      const after = statsBySnap.get(w.snapshot_after_id) ?? [];
+      if (!before.length || !after.length) { colorIdx++; continue; }
+
+      const beforeMap = new Map<string, GovernorStat>();
+      for (const g of before) {
+        const k = g.governor_id || g.governor_name;
+        beforeMap.set(k, g);
+      }
+
+      const gAfter = after.find(
+        (g) => (g.governor_id || g.governor_name) === govKey,
+      );
+      if (!gAfter) {
+        warResults.push({ id: w.id, name: w.name, color: WAR_COLORS[colorIdx % WAR_COLORS.length], gains: undefined });
+        colorIdx++;
+        continue;
+      }
+
+      const gBefore = beforeMap.get(govKey);
+      const t4_gained = (gAfter.t4_kills ?? 0) - (gBefore?.t4_kills ?? 0);
+      const t5_gained = (gAfter.t5_kills ?? 0) - (gBefore?.t5_kills ?? 0);
+      const kills_gained = (gAfter.total_kills ?? 0) - (gBefore?.total_kills ?? 0);
+      const deaths_gained = (gAfter.deaths ?? 0) - (gBefore?.deaths ?? 0);
+      const dkp = t4_gained * weights.t4_kills + t5_gained * weights.t5_kills + deaths_gained * weights.deaths;
+      totalDkp += dkp;
+
+      warResults.push({
+        id: w.id,
+        name: w.name,
+        color: WAR_COLORS[colorIdx % WAR_COLORS.length],
+        gains: { t4_gained, t5_gained, kills_gained, deaths_gained, dkp },
+      });
+      colorIdx++;
+    }
+
+    if (!warResults.length) return undefined;
+    return { wars: warResults, totalDkp, tiers, power: governor.power ?? 0 };
+  }, [governor, allWarStats, wars, weights, tiers]);
+
+  const resolvedKvk = kvkData ?? selfKvkData;
 
   return (
     <Dialog
@@ -137,6 +210,9 @@ export default function GovernorProfileCard({
         <DialogHeader>
           <div className="flex items-center gap-3 flex-wrap">
             <DialogTitle className="text-xl">{governor?.governor_name}</DialogTitle>
+            {!!governorId && governor?.governor_id === governorId && (
+              <Badge className="text-xs">You</Badge>
+            )}
             {governor?.governor_id && (
               <Badge variant="secondary" className="font-mono text-xs">
                 ID: {governor.governor_id}
@@ -159,14 +235,9 @@ export default function GovernorProfileCard({
               <TabsTrigger value="trends" className="gap-1.5 text-xs">
                 <TrendingUp className="h-3.5 w-3.5" /> Trends
               </TabsTrigger>
-              <TabsTrigger value="alliance" className="gap-1.5 text-xs">
-                <History className="h-3.5 w-3.5" /> Alliance
+              <TabsTrigger value="kvk" className="gap-1.5 text-xs">
+                <Swords className="h-3.5 w-3.5" /> KvK
               </TabsTrigger>
-              {kvkData && (
-                <TabsTrigger value="kvk" className="gap-1.5 text-xs">
-                  <Swords className="h-3.5 w-3.5" /> KvK
-                </TabsTrigger>
-              )}
             </TabsList>
 
             {/* ── Overview Tab ── */}
@@ -183,22 +254,16 @@ export default function GovernorProfileCard({
               />
             </TabsContent>
 
-            {/* ── Alliance History Tab ── */}
-            <TabsContent value="alliance" className="mt-4">
-              <AllianceTab
-                changes={allianceChanges}
-                currentAlliance={governor.alliance}
-                isLoading={historyLoading}
-                governorId={governor.governor_id}
-              />
+            {/* ── KvK History Tab ── */}
+            <TabsContent value="kvk" className="mt-4">
+              {resolvedKvk ? (
+                <KvKTab kvkData={resolvedKvk} />
+              ) : (
+                <p className="text-sm text-muted-foreground py-6 text-center">
+                  No KvK war data available yet.
+                </p>
+              )}
             </TabsContent>
-
-            {/* ── KvK Tab (conditional) ── */}
-            {kvkData && (
-              <TabsContent value="kvk" className="mt-4">
-                <KvKTab kvkData={kvkData} />
-              </TabsContent>
-            )}
           </Tabs>
         )}
       </DialogContent>
@@ -372,109 +437,107 @@ function TrendsTab({
   );
 }
 
-/* ── Alliance History ── */
+/* ── KvK Tab ── */
 
-function AllianceTab({
-  changes,
-  currentAlliance,
-  isLoading,
-  governorId,
-}: {
-  changes: { date: string; from: string; to: string }[];
-  currentAlliance: string | null;
-  isLoading: boolean;
-  governorId: string | null;
-}) {
-  if (!governorId) {
-    return (
-      <p className="text-sm text-muted-foreground py-6 text-center">
-        No governor ID available — alliance history requires a consistent ID across snapshots.
-      </p>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
+function KvKChartTooltip({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null;
   return (
-    <div className="space-y-3">
-      <p className="text-xs text-muted-foreground">
-        Current alliance: <span className="font-semibold text-foreground">[{currentAlliance ?? "—"}]</span>
-      </p>
-      {changes.length === 0 ? (
-        <p className="text-sm text-muted-foreground py-4 text-center">
-          No alliance changes detected across snapshots.
-        </p>
-      ) : (
-        <div className="rounded-lg border border-border/60 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-muted/50 text-xs text-muted-foreground uppercase tracking-wider">
-                <th className="text-left p-2 font-semibold">Date</th>
-                <th className="text-left p-2 font-semibold">From</th>
-                <th className="text-left p-2 font-semibold">To</th>
-              </tr>
-            </thead>
-            <tbody>
-              {changes.map((c, i) => (
-                <tr key={i} className="border-t border-border/40 hover:bg-muted/20">
-                  <td className="p-2 text-muted-foreground">{c.date}</td>
-                  <td className="p-2 font-medium">[{c.from}]</td>
-                  <td className="p-2 font-medium text-primary">[{c.to}]</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+    <div className="rounded-lg border border-border/60 bg-popover px-3 py-2 shadow-xl">
+      <p className="text-xs font-semibold text-foreground mb-1">{label}</p>
+      {payload.map((entry: any) => (
+        <div key={entry.dataKey} className="flex items-center justify-between gap-4 text-xs">
+          <span className="flex items-center gap-1.5 text-muted-foreground">
+            <span className="h-2 w-2 rounded-full inline-block" style={{ backgroundColor: entry.color }} />
+            {entry.name}
+          </span>
+          <span className="font-medium tabular-nums text-foreground">{fmt(entry.value)}</span>
         </div>
-      )}
+      ))}
     </div>
   );
 }
 
-/* ── KvK Tab ── */
-
 function KvKTab({ kvkData }: { kvkData: KvKExtras }) {
   const { wars, totalDkp, tiers, power } = kvkData;
+  const warsWithGains = wars.filter((w) => w.gains);
+
+  /* chart data */
+  const chartData = warsWithGains.map((w) => ({
+    name: w.name,
+    DKP: w.gains!.dkp,
+    Kills: w.gains!.kills_gained,
+    Deaths: w.gains!.deaths_gained,
+  }));
 
   return (
     <div className="space-y-4">
-      {/* Per-war breakdown */}
-      {wars.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-sm font-semibold text-muted-foreground">War Breakdown</p>
-          {wars.map((w) => (
-            <div key={w.id} className="flex justify-between items-center text-sm">
-              <span className="flex items-center gap-2 text-muted-foreground">
-                <span
-                  className="inline-block w-2 h-2 rounded-full"
-                  style={{ backgroundColor: w.color }}
-                />
-                {w.name}
-              </span>
-              {w.gains ? (
-                <span className="tabular-nums">
-                  <span className="font-semibold" style={{ color: w.color }}>
-                    {fmt(w.gains.dkp)}
-                  </span>
-                  <span className="text-muted-foreground text-xs ml-2">
-                    T4: {fmt(w.gains.t4_gained)} · T5: {fmt(w.gains.t5_gained)} · K:{" "}
-                    {fmt(w.gains.kills_gained)} · D: {fmt(w.gains.deaths_gained)}
-                  </span>
-                </span>
-              ) : (
-                <span className="text-muted-foreground/50">—</span>
-              )}
-            </div>
-          ))}
-          <div className="flex justify-between items-center text-sm font-bold border-t border-border pt-2">
-            <span>Total DKP</span>
-            <span className="text-primary tabular-nums">{fmt(totalDkp)}</span>
-          </div>
+      {/* War summary table */}
+      {warsWithGains.length > 0 ? (
+        <div className="rounded-lg border border-border/60 overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-muted/50 text-xs text-muted-foreground uppercase tracking-wider">
+                <th className="text-left p-2 font-semibold">War</th>
+                <th className="text-right p-2 font-semibold">DKP</th>
+                <th className="text-right p-2 font-semibold">Kills</th>
+                <th className="text-right p-2 font-semibold">Deaths</th>
+              </tr>
+            </thead>
+            <tbody>
+              {warsWithGains.map((w) => (
+                <tr key={w.id} className="border-t border-border/40 hover:bg-muted/20">
+                  <td className="p-2">
+                    <span className="flex items-center gap-2">
+                      <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: w.color }} />
+                      {w.name}
+                    </span>
+                  </td>
+                  <td className="p-2 text-right font-semibold tabular-nums" style={{ color: w.color }}>
+                    {fmt(w.gains!.dkp)}
+                  </td>
+                  <td className="p-2 text-right tabular-nums text-muted-foreground">{fmt(w.gains!.kills_gained)}</td>
+                  <td className="p-2 text-right tabular-nums text-muted-foreground">{fmt(w.gains!.deaths_gained)}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="border-t-2 border-border bg-muted/30">
+                <td className="p-2 font-bold">Total</td>
+                <td className="p-2 text-right font-bold text-primary tabular-nums">{fmt(totalDkp)}</td>
+                <td className="p-2 text-right font-semibold tabular-nums text-muted-foreground">
+                  {fmt(warsWithGains.reduce((s, w) => s + (w.gains?.kills_gained ?? 0), 0))}
+                </td>
+                <td className="p-2 text-right font-semibold tabular-nums text-muted-foreground">
+                  {fmt(warsWithGains.reduce((s, w) => s + (w.gains?.deaths_gained ?? 0), 0))}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground py-4 text-center">
+          This governor has no recorded war participation.
+        </p>
+      )}
+
+      {/* Mini bar chart */}
+      {chartData.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+            Performance per War
+          </p>
+          <ResponsiveContainer width="100%" height={160}>
+            <BarChart data={chartData} barCategoryGap="20%">
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+              <YAxis tick={{ fontSize: 10 }} tickFormatter={(v: number) => fmt(v)} />
+              <Tooltip content={<KvKChartTooltip />} />
+              <Legend wrapperStyle={{ fontSize: 11 }} />
+              <Bar dataKey="DKP" fill="hsl(221, 83%, 53%)" radius={[3, 3, 0, 0]} />
+              <Bar dataKey="Kills" fill="hsl(142, 71%, 45%)" radius={[3, 3, 0, 0]} />
+              <Bar dataKey="Deaths" fill="hsl(0, 84%, 60%)" radius={[3, 3, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       )}
 

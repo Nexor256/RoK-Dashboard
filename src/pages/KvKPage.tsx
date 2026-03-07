@@ -143,12 +143,16 @@ function computeGains(
   afterStats: GovernorStat[],
   weights: DkpWeights,
 ): Map<string, WarGains> {
-  const beforeMap = new Map<string, GovernorStat>();
-  for (const g of beforeStats) beforeMap.set(g.governor_name, g);
+  const beforeById = new Map<string, GovernorStat>();
+  const beforeByName = new Map<string, GovernorStat>();
+  for (const g of beforeStats) {
+    if (g.governor_id) beforeById.set(g.governor_id, g);
+    beforeByName.set(g.governor_name, g);
+  }
 
   const map = new Map<string, WarGains>();
   for (const gTo of afterStats) {
-    const gFrom = beforeMap.get(gTo.governor_name);
+    const gFrom = (gTo.governor_id && beforeById.get(gTo.governor_id)) || beforeByName.get(gTo.governor_name);
     const t4_gained = (gTo.t4_kills ?? 0) - (gFrom?.t4_kills ?? 0);
     const t5_gained = (gTo.t5_kills ?? 0) - (gFrom?.t5_kills ?? 0);
     const kills_gained = (gTo.total_kills ?? 0) - (gFrom?.total_kills ?? 0);
@@ -157,7 +161,8 @@ function computeGains(
       t4_gained * weights.t4_kills +
       t5_gained * weights.t5_kills +
       deaths_gained * weights.deaths;
-    map.set(gTo.governor_name, { t4_gained, t5_gained, kills_gained, deaths_gained, dkp });
+    const key = gTo.governor_id || gTo.governor_name;
+    map.set(key, { t4_gained, t5_gained, kills_gained, deaths_gained, dkp });
   }
   return map;
 }
@@ -182,7 +187,7 @@ export default function KvKPage() {
   const deleteWar = useDeleteKvKWar();
   const { data: tiers = [], isLoading: tiersLoading } = useKvKThresholds();
   const updateTiers = useUpdateKvKThresholds();
-  const { isAdmin } = useAuth();
+  const { isPrivileged } = useAuth();
 
   const [search, setSearch] = useState("");
   const [alliance, setAlliance] = useState("all");
@@ -251,8 +256,9 @@ export default function KvKPage() {
       const afterStats = statsBySnapshot.get(w.snapshot_after_id!) ?? [];
 
       for (const gStat of afterStats) {
-        if (!govMap.has(gStat.governor_name)) {
-          govMap.set(gStat.governor_name, {
+        const govKey = gStat.governor_id || gStat.governor_name;
+        if (!govMap.has(govKey)) {
+          govMap.set(govKey, {
             governor_name: gStat.governor_name,
             governor_id: gStat.governor_id,
             alliance: gStat.alliance,
@@ -263,8 +269,10 @@ export default function KvKPage() {
             totalDkp: 0,
           });
         }
-        const row = govMap.get(gStat.governor_name)!;
-        const g = gains.get(gStat.governor_name);
+        const row = govMap.get(govKey)!;
+        // Always update to the latest name
+        row.governor_name = gStat.governor_name;
+        const g = gains.get(govKey);
         if (g) {
           row.wars[w.id] = g;
           row.totalDkp += g.dkp;
@@ -517,7 +525,7 @@ export default function KvKPage() {
               </p>
             </CardHeader>
             <CardContent>
-              {isAdmin ? (
+              {isPrivileged ? (
                 <div className="space-y-4">
                   <div className="grid grid-cols-3 gap-3">
                     {(
@@ -620,7 +628,7 @@ export default function KvKPage() {
                   index={idx}
                   colorDot={warColor(idx)}
                   snapshots={snapshots ?? []}
-                  isAdmin={isAdmin}
+                  isPrivileged={isPrivileged}
                   isFirst={idx === 0}
                   isLast={idx === wars.length - 1}
                   onUpdate={(fields) => updateWar.mutate({ id: w.id, ...fields })}
@@ -629,7 +637,7 @@ export default function KvKPage() {
                 />
               ))}
 
-              {isAdmin && (
+              {isPrivileged && (
                 <div className="flex gap-2 items-center pt-2 border-t border-border/40">
                   <Input
                     placeholder="New war name (e.g. Pass 4 – Zone 5)"
@@ -646,7 +654,7 @@ export default function KvKPage() {
 
               {!wars.length && (
                 <p className="text-sm text-muted-foreground">
-                  No wars created yet.{isAdmin ? " Add one above." : " Ask an admin to add war events."}
+                  No wars created yet.{isPrivileged ? " Add one above." : " Ask an admin to add war events."}
                 </p>
               )}
             </CardContent>
@@ -674,7 +682,7 @@ export default function KvKPage() {
               </p>
             </CardHeader>
             <CardContent>
-              {isAdmin ? (
+              {isPrivileged ? (
                 <div className="space-y-3">
                   {(editTiers ?? tiers).map((tier, idx) => (
                     <div key={idx} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 items-end">
@@ -1152,7 +1160,7 @@ interface WarEditorProps {
   index: number;
   colorDot: string;
   snapshots: { id: string; label: string | null; snapshot_date: string }[];
-  isAdmin: boolean;
+  isPrivileged: boolean;
   isFirst: boolean;
   isLast: boolean;
   onUpdate: (fields: Partial<KvKWar>) => void;
@@ -1165,7 +1173,7 @@ function WarEditor({
   index,
   colorDot,
   snapshots,
-  isAdmin,
+  isPrivileged,
   isFirst,
   isLast,
   onUpdate,
@@ -1180,7 +1188,7 @@ function WarEditor({
           className="inline-block w-3 h-3 rounded-full shrink-0"
           style={{ backgroundColor: colorDot }}
         />
-        {isAdmin && (
+        {isPrivileged && (
           <div className="flex flex-col">
             <button
               onClick={() => onMove("up")}
@@ -1201,7 +1209,7 @@ function WarEditor({
       </div>
 
       <div className="flex-1 min-w-0">
-        {isAdmin ? (
+        {isPrivileged ? (
           <Input
             value={war.name}
             onChange={(e) => onUpdate({ name: e.target.value })}
@@ -1215,7 +1223,7 @@ function WarEditor({
       <div className="flex items-center gap-2 flex-wrap">
         <div className="flex items-center gap-1">
           <span className="text-xs text-muted-foreground whitespace-nowrap">Before:</span>
-          {isAdmin ? (
+          {isPrivileged ? (
             <Select
               value={war.snapshot_before_id ?? "none"}
               onValueChange={(v) => onUpdate({ snapshot_before_id: v === "none" ? null : v })}
@@ -1243,7 +1251,7 @@ function WarEditor({
 
         <div className="flex items-center gap-1">
           <span className="text-xs text-muted-foreground whitespace-nowrap">After:</span>
-          {isAdmin ? (
+          {isPrivileged ? (
             <Select
               value={war.snapshot_after_id ?? "none"}
               onValueChange={(v) => onUpdate({ snapshot_after_id: v === "none" ? null : v })}
@@ -1269,7 +1277,7 @@ function WarEditor({
           )}
         </div>
 
-        {isAdmin && (
+        {isPrivileged && (
           <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={onDelete}>
             <Trash2 className="h-4 w-4" />
           </Button>

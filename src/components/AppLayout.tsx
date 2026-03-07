@@ -16,16 +16,16 @@ const navItems = [
   { to: "/charts", label: "Charts", icon: BarChart3 },
   { to: "/snapshots", label: "Snapshots", icon: History },
   { to: "/kvk", label: "KvK", icon: Swords },
-  { to: "/upload", label: "Upload", icon: Upload, adminOnly: true },
+  { to: "/upload", label: "Upload", icon: Upload, privilegedOnly: true },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();
-  const { signOut, profile, isAdmin } = useAuth();
+  const { signOut, profile, isAdmin, isPrivileged } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const visibleItems = navItems.filter((item) => !item.adminOnly || isAdmin);
+  const visibleItems = navItems.filter((item) => !item.privilegedOnly || isPrivileged);
 
   const navLinks = (onClick?: () => void) => (
     <>

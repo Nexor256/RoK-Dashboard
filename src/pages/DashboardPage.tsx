@@ -1,10 +1,11 @@
 import { useState, useMemo } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { useLatestGovernorStats, type GovernorStat } from "@/hooks/useGovernorData";
 import { useKingdomSettings, useUpdateKingdomSettings } from "@/hooks/useKingdomSettings";
 import { useAnnouncements, useCreateAnnouncement, useDeleteAnnouncement } from "@/hooks/useAnnouncements";
 import { useAuth } from "@/hooks/useAuth";
-import { Crown, Users, Swords, Skull, TrendingUp, Loader2, Pencil, Check, X, Megaphone, Trash2, Plus, Trophy, Medal } from "lucide-react";
+import { Crown, Users, Swords, Skull, TrendingUp, Loader2, Pencil, Check, X, Megaphone, Trash2, Plus, Trophy, Medal, AlertTriangle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -12,12 +13,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { fmt } from "@/lib/utils";
 import GovernorProfileCard from "@/components/GovernorProfileCard";
 
-const statConfig: Record<string, { icon: typeof Users; gradient: string; iconColor: string }> = {
+const statConfig: Record<string, { icon: typeof Users; gradient: string; iconColor: string; sortKey?: string }> = {
   "Total Governors": { icon: Users, gradient: "from-blue-500/10 to-blue-600/5", iconColor: "text-blue-500" },
-  "Total Power": { icon: TrendingUp, gradient: "from-violet-500/10 to-violet-600/5", iconColor: "text-violet-500" },
-  "Total Kill Points": { icon: Swords, gradient: "from-rose-500/10 to-rose-600/5", iconColor: "text-rose-500" },
-  "Total Deaths": { icon: Skull, gradient: "from-amber-500/10 to-amber-600/5", iconColor: "text-amber-500" },
-  "Total Kills": { icon: Crown, gradient: "from-emerald-500/10 to-emerald-600/5", iconColor: "text-emerald-500" },
+  "Total Power": { icon: TrendingUp, gradient: "from-violet-500/10 to-violet-600/5", iconColor: "text-violet-500", sortKey: "power" },
+  "Total Kills": { icon: Crown, gradient: "from-emerald-500/10 to-emerald-600/5", iconColor: "text-emerald-500", sortKey: "total_kills" },
+  "Total Kill Points": { icon: Swords, gradient: "from-rose-500/10 to-rose-600/5", iconColor: "text-rose-500", sortKey: "killpoints" },
+  "Total Deaths": { icon: Skull, gradient: "from-amber-500/10 to-amber-600/5", iconColor: "text-amber-500", sortKey: "deaths" },
 };
 
 const medalColors = ["text-yellow-500", "text-gray-400", "text-amber-700"];
@@ -29,7 +30,7 @@ export default function DashboardPage() {
   const { data: announcements = [] } = useAnnouncements();
   const createAnnouncement = useCreateAnnouncement();
   const deleteAnnouncement = useDeleteAnnouncement();
-  const { isAdmin } = useAuth();
+  const { isPrivileged } = useAuth();
 
   const [editing, setEditing] = useState(false);
   const [editNumber, setEditNumber] = useState("");
@@ -38,6 +39,18 @@ export default function DashboardPage() {
   const [newTitle, setNewTitle] = useState("");
   const [newBody, setNewBody] = useState("");
   const [selectedGov, setSelectedGov] = useState<GovernorStat | null>(null);
+  const navigate = useNavigate();
+
+  const governors = data?.governors ?? [];
+  const snapshot = data?.snapshot;
+
+  const isStale = useMemo(() => {
+    if (!snapshot) return true;
+    const snapshotDate = new Date(snapshot.snapshot_date);
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    return snapshotDate < sevenDaysAgo;
+  }, [snapshot]);
 
   function startEdit() {
     setEditNumber(String(kingdom?.kingdom_number ?? ""));
@@ -61,9 +74,6 @@ export default function DashboardPage() {
     );
   }
 
-  const governors = data?.governors ?? [];
-  const snapshot = data?.snapshot;
-
   if (!governors.length) {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-muted-foreground gap-2">
@@ -81,16 +91,16 @@ export default function DashboardPage() {
       value: fmt(governors.reduce((a, g) => a + (g.power ?? 0), 0)),
     },
     {
+      label: "Total Kills",
+      value: fmt(governors.reduce((a, g) => a + (g.total_kills ?? 0), 0)),
+    },
+    {
       label: "Total Kill Points",
       value: fmt(governors.reduce((a, g) => a + (g.killpoints ?? 0), 0)),
     },
     {
       label: "Total Deaths",
       value: fmt(governors.reduce((a, g) => a + (g.deaths ?? 0), 0)),
-    },
-    {
-      label: "Total Kills",
-      value: fmt(governors.reduce((a, g) => a + (g.total_kills ?? 0), 0)),
     },
   ];
 
@@ -128,7 +138,7 @@ export default function DashboardPage() {
                   ? `Kingdom #${kingdom.kingdom_number}${kingdom.kingdom_name ? ` — ${kingdom.kingdom_name}` : ""}`
                   : "Kingdom Overview"}
               </p>
-              {isAdmin && !kingdomLoading && (
+              {isPrivileged && !kingdomLoading && (
                 <button onClick={startEdit} className="text-muted-foreground hover:text-foreground transition-colors">
                   <Pencil className="h-3 w-3" />
                 </button>
@@ -153,8 +163,13 @@ export default function DashboardPage() {
           const Icon = config?.icon ?? Users;
           const gradient = config?.gradient ?? "from-primary/10 to-primary/5";
           const iconColor = config?.iconColor ?? "text-primary";
+          const sortKey = config?.sortKey;
           return (
-            <Card key={s.label} className="card-hover border-border/60 overflow-hidden">
+            <Card
+              key={s.label}
+              className={`card-hover border-border/60 overflow-hidden${sortKey ? " cursor-pointer" : ""}`}
+              onClick={sortKey ? () => navigate(`/rankings?sort=${sortKey}`) : undefined}
+            >
               <CardContent className={`p-5 flex flex-col gap-3 bg-gradient-to-br ${gradient}`}>
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{s.label}</span>
@@ -168,6 +183,22 @@ export default function DashboardPage() {
           );
         })}
       </div>
+
+      {/* Stale data banner for admins */}
+      {isPrivileged && isStale && (
+        <div className="flex items-center gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+          <AlertTriangle className="h-5 w-5 shrink-0 text-amber-500" />
+          <p className="text-sm text-foreground flex-1">
+            Your data might be stale — no snapshot in the last 7 days.
+          </p>
+          <Link
+            to="/upload"
+            className="shrink-0 rounded-md bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-600 transition-colors"
+          >
+            Upload Snapshot
+          </Link>
+        </div>
+      )}
 
       {/* Leaderboard */}
       {(() => {
@@ -252,7 +283,7 @@ export default function DashboardPage() {
           <h2 className="font-display text-xl font-bold text-foreground flex items-center gap-2">
             <Megaphone className="h-5 w-5 text-primary" /> Announcements
           </h2>
-          {isAdmin && (
+          {isPrivileged && (
             <Button
               variant="outline"
               size="sm"
@@ -265,7 +296,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Admin new announcement form */}
-        {isAdmin && showNewAnnouncement && (
+        {isPrivileged && showNewAnnouncement && (
           <Card className="border-primary/30 mb-4 shadow-md">
             <CardContent className="p-4 space-y-3">
               <Input
@@ -346,7 +377,7 @@ export default function DashboardPage() {
                             })}
                           </p>
                         </div>
-                        {isAdmin && (
+                        {isPrivileged && (
                           <Button
                             variant="ghost"
                             size="sm"

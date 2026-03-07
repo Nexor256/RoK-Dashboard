@@ -15,7 +15,7 @@ Deno.serve(async (req) => {
     // Verify the caller is an admin
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      return new Response(JSON.stringify({ error: "No valid Authorization header provided" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
 
     const { data: userData, error: userError } = await anonClient.auth.getUser();
     if (userError || !userData?.user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      return new Response(JSON.stringify({ error: `Auth verification failed: ${userError?.message || "no user data"}` }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -57,17 +57,23 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { email, password, display_name, avatar_url } = await req.json();
+    const { governor_id, password, display_name, avatar_url, role } = await req.json();
 
-    if (!email || !password || !display_name) {
+    if (!governor_id || !password || !display_name) {
       return new Response(
-        JSON.stringify({ error: "email, password, and display_name are required" }),
+        JSON.stringify({ error: "governor_id, password, and display_name are required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    // Build synthetic email from governor ID
+    const email = `${governor_id}@rok.local`;
+
+    // Validate role — only 'user' or 'r4' allowed via this endpoint
+    const assignedRole = role === "r4" ? "r4" : "user";
+
     // Create user with admin API
-    const { data: userData, error: createError } = await adminClient.auth.admin.createUser({
+    const { data: newUserData, error: createError } = await adminClient.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
@@ -80,12 +86,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Create profile
-    const { error: profileError } = await adminClient.from("profiles").insert({
-      user_id: userData.user.id,
+    // Create profile (upsert — the auto-profile trigger may have already created one)
+    const { error: profileError } = await adminClient.from("profiles").upsert({
+      user_id: newUserData.user.id,
       display_name,
       avatar_url: avatar_url || null,
-    });
+    }, { onConflict: "user_id" });
 
     if (profileError) {
       return new Response(JSON.stringify({ error: profileError.message }), {
@@ -94,14 +100,21 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Assign 'user' role
-    await adminClient.from("user_roles").insert({
-      user_id: userData.user.id,
-      role: "user",
+    // Assign role
+    const { error: roleError } = await adminClient.from("user_roles").insert({
+      user_id: newUserData.user.id,
+      role: assignedRole,
     });
 
+    if (roleError) {
+      return new Response(JSON.stringify({ error: roleError.message }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     return new Response(
-      JSON.stringify({ success: true, user_id: userData.user.id }),
+      JSON.stringify({ success: true, user_id: newUserData.user.id }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {

@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UserPlus, Loader2, Users, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -26,11 +27,12 @@ interface UserRole {
 }
 
 export default function ManageUsersPage() {
-  const [email, setEmail] = useState("");
+  const [governorId, setGovernorId] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [selectedRole, setSelectedRole] = useState<"user" | "r4">("user");
   const [creating, setCreating] = useState(false);
   const { toast } = useToast();
   const { session } = useAuth();
@@ -55,6 +57,7 @@ export default function ManageUsersPage() {
   const getRoleBadge = (userId: string) => {
     const role = roles.find((r) => r.user_id === userId);
     if (role?.role === "admin") return <Badge className="bg-primary text-primary-foreground text-xs">Admin</Badge>;
+    if (role?.role === "r4") return <Badge className="bg-amber-500 text-white text-xs">R4</Badge>;
     return <Badge variant="outline" className="text-xs">User</Badge>;
   };
 
@@ -67,7 +70,7 @@ export default function ManageUsersPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password || !displayName) return;
+    if (!governorId || !password || !displayName) return;
     setCreating(true);
 
     try {
@@ -84,23 +87,36 @@ export default function ManageUsersPage() {
       }
 
       // Call edge function
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
       const { data, error } = await supabase.functions.invoke("create-user", {
-        body: { email, password, display_name: displayName, avatar_url: avatarUrl },
+        body: { governor_id: governorId, password, display_name: displayName, avatar_url: avatarUrl, role: selectedRole },
+        headers: { Authorization: `Bearer ${currentSession?.access_token}` },
       });
 
       if (error) {
-        // Try to extract the JSON body from the edge function response
-        const msg = data?.error || error.message || "Failed to create user";
+        // Extract the actual error from the edge function response
+        let msg = "Failed to create user";
+        if (data?.error) {
+          msg = data.error;
+        } else if ("context" in error && error.context instanceof Response) {
+          try {
+            const body = await error.context.json();
+            msg = body?.error || msg;
+          } catch {}
+        } else {
+          msg = error.message || msg;
+        }
         throw new Error(msg);
       }
       if (data?.error) throw new Error(data.error);
 
-      toast({ title: "User created", description: `${displayName} can now sign in with ${email}` });
-      setEmail("");
+      toast({ title: "User created", description: `${displayName} can now sign in with Governor ID ${governorId}` });
+      setGovernorId("");
       setPassword("");
       setDisplayName("");
       setAvatarFile(null);
       setAvatarPreview(null);
+      setSelectedRole("user");
       queryClient.invalidateQueries({ queryKey: ["profiles"] });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Failed to create user";
@@ -147,13 +163,26 @@ export default function ManageUsersPage() {
               </div>
 
               <div className="space-y-2">
-                <Label>Email</Label>
-                <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="player@example.com" required />
+                <Label>Governor ID</Label>
+                <Input value={governorId} onChange={(e) => setGovernorId(e.target.value)} placeholder="e.g. 12345678" required />
               </div>
 
               <div className="space-y-2">
                 <Label>Password</Label>
                 <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Min 6 characters" required minLength={6} />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Role</Label>
+                <Select value={selectedRole} onValueChange={(v) => setSelectedRole(v as "user" | "r4")}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="user">User</SelectItem>
+                    <SelectItem value="r4">R4 (Officer)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <Button type="submit" className="w-full" disabled={creating}>
