@@ -223,9 +223,7 @@ Upload governor data as CSV with the following columns. The system normalizes co
 | `t45_kills` | — | number |
 | `killpoints` | `kp` | number |
 | `deaths` | `deads` | number |
-| `dead_troops` | — | number |
 | `ranged` | — | number |
-| `healed` | — | number |
 | `resource_gathered` | `rss_gathered` | number |
 | `rss_assistance` | — | number |
 | `helps` | — | number |

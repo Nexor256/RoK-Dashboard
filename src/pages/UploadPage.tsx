@@ -27,7 +27,7 @@ const GENERAL_COLUMNS = [
   "governor_id", "governor_name", "alliance", "power",
   "t1_kills", "t2_kills", "t3_kills", "t4_kills", "t5_kills",
   "total_kills", "t45_kills", "killpoints",
-  "deaths", "ranged", "dead_troops", "healed",
+  "deaths", "ranged",
   "resource_gathered", "rss_assistance",
   "helps", "city_hall_level",
 ];
@@ -134,8 +134,6 @@ export default function UploadPage() {
           killpoints: parseInt(row.killpoints || "0", 10) || 0,
           deaths: parseInt(row.deaths || "0", 10) || 0,
           ranged: parseInt(row.ranged || "0", 10) || 0,
-          dead_troops: parseInt(row.dead_troops || "0", 10) || 0,
-          healed: parseInt(row.healed || "0", 10) || 0,
           resource_gathered: parseInt(row.resource_gathered || "0", 10) || 0,
           rss_assistance: parseInt(row.rss_assistance || "0", 10) || 0,
           helps: parseInt(row.helps || "0", 10) || 0,

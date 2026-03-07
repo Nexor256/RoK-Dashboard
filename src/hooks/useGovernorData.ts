@@ -21,8 +21,6 @@ export interface GovernorStat {
   killpoints: number | null;
   deaths: number | null;
   ranged: number | null;
-  dead_troops: number | null;
-  healed: number | null;
   resource_gathered: number | null;
   rss_assistance: number | null;
   helps: number | null;

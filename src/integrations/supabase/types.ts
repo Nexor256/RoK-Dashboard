@@ -17,10 +17,8 @@ export type Database = {
       governor_stats: {
         Row: {
           alliance: string | null
-          dead_troops: number | null
           deaths: number | null
           governor_name: string
-          healed: number | null
           id: string
           power: number | null
           power_growth: number | null
@@ -31,10 +29,8 @@ export type Database = {
         }
         Insert: {
           alliance?: string | null
-          dead_troops?: number | null
           deaths?: number | null
           governor_name: string
-          healed?: number | null
           id?: string
           power?: number | null
           power_growth?: number | null
@@ -45,10 +41,8 @@ export type Database = {
         }
         Update: {
           alliance?: string | null
-          dead_troops?: number | null
           deaths?: number | null
           governor_name?: string
-          healed?: number | null
           id?: string
           power?: number | null
           power_growth?: number | null
