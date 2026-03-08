@@ -25,6 +25,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { ArrowUpDown, ChevronLeft, ChevronRight, Download, Search, Loader2, TrendingUp, TrendingDown, Columns3, Palette, BookmarkPlus, Bookmark, X } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Sparkline } from "@/components/Sparkline";
+import { useRecentTrends } from "@/hooks/useRecentTrends";
 
 type SortKey =
   | "governor_name" | "alliance" | "power" | "t1_kills" | "t2_kills" | "t3_kills"
@@ -130,6 +133,7 @@ export default function RankingsPage() {
   const { data, isLoading } = useLatestGovernorStats();
   const governors = data?.governors ?? [];
   const { data: prevData } = usePreviousGovernorStats();
+  const { data: trendMap } = useRecentTrends();
   const { data: tiers } = useKvKThresholds();
   const { governorId } = useAuth();
   const { data: prefs } = useUserPreferences();
@@ -307,23 +311,46 @@ export default function RankingsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="space-y-5 page-transition">
+        <div className="space-y-2">
+          <Skeleton className="h-9 w-56" />
+          <Skeleton className="h-4 w-72" />
+        </div>
+        <div className="flex gap-3 flex-wrap">
+          <Skeleton className="h-10 w-64" />
+          <Skeleton className="h-10 w-36" />
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <div className="rounded-xl border border-white/[0.06] overflow-hidden">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-4 px-4 py-3 border-b border-white/[0.04]">
+              <Skeleton className="h-4 w-6" />
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-16 ml-auto" />
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-4 w-16" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
 
   if (!governors.length) {
     return (
-      <div className="space-y-4">
-        <h1 className="font-display text-3xl font-bold">Governor Rankings</h1>
-        <p className="text-muted-foreground">No data yet. Upload a governor snapshot to see rankings.</p>
+      <div className="flex flex-col items-center justify-center h-64 text-center page-transition">
+        <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+          <Search className="h-8 w-8 text-primary" />
+        </div>
+        <h2 className="text-xl font-bold text-foreground">No Rankings Yet</h2>
+        <p className="text-sm text-muted-foreground mt-1 max-w-sm">Upload a governor snapshot to see rankings and leaderboard data.</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 page-transition">
       <div>
         <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight">
           <span className="text-gradient">Governor Rankings</span>
@@ -440,7 +467,7 @@ export default function RankingsPage() {
       {/* Table */}
       <Card className="border-white/[0.06] overflow-hidden glass-panel">
         <div className="overflow-x-auto scrollbar-hide">
-          <Table className="w-full">
+          <Table className="w-full sticky-header">
             <TableHeader>
               <TableRow className="bg-white/[0.02] hover:bg-white/[0.02] border-b border-white/[0.06]">
                 <TableHead className="w-10 text-center">#</TableHead>
@@ -505,14 +532,30 @@ export default function RankingsPage() {
                         <>
                           {show("power") && (
                             <TableCell className="font-semibold text-sm tabular-nums" style={hm("power", g.power ?? 0)}>
-                              {fmt(g.power ?? 0)}
-                              <Trend current={g.power ?? 0} previous={prev?.power ?? undefined} />
+                              <div className="flex items-center gap-1.5">
+                                {fmt(g.power ?? 0)}
+                                <Trend current={g.power ?? 0} previous={prev?.power ?? undefined} />
+                                {(() => {
+                                  const key = g.governor_id || g.governor_name;
+                                  const td = trendMap?.get(key);
+                                  const pts = td?.power.filter((v): v is number => v !== null) ?? [];
+                                  return pts.length >= 2 ? <Sparkline data={pts} /> : null;
+                                })()}
+                              </div>
                             </TableCell>
                           )}
                           {show("killpoints") && (
                             <TableCell className="text-primary font-semibold text-sm tabular-nums" style={hm("killpoints", g.killpoints ?? 0)}>
-                              {fmt(g.killpoints ?? 0)}
-                              <Trend current={g.killpoints ?? 0} previous={prev?.killpoints ?? undefined} />
+                              <div className="flex items-center gap-1.5">
+                                {fmt(g.killpoints ?? 0)}
+                                <Trend current={g.killpoints ?? 0} previous={prev?.killpoints ?? undefined} />
+                                {(() => {
+                                  const key = g.governor_id || g.governor_name;
+                                  const td = trendMap?.get(key);
+                                  const pts = td?.killpoints.filter((v): v is number => v !== null) ?? [];
+                                  return pts.length >= 2 ? <Sparkline data={pts} /> : null;
+                                })()}
+                              </div>
                             </TableCell>
                           )}
                           {show("t4_kills") && (

@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { fmt } from "@/lib/utils";
 import GovernorProfileCard from "@/components/GovernorProfileCard";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const statConfig: Record<string, { icon: typeof Users; gradient: string; iconColor: string; iconBg: string; sortKey?: string }> = {
   "Total Governors": { icon: Users, gradient: "from-blue-500/15 via-blue-600/5 to-transparent", iconColor: "text-blue-400", iconBg: "bg-blue-500/10" },
@@ -68,18 +69,47 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="space-y-6 page-transition">
+        {/* Title skeleton */}
+        <div className="space-y-2">
+          <Skeleton className="h-9 w-64" />
+          <Skeleton className="h-4 w-48" />
+        </div>
+        {/* Stat cards skeleton */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="rounded-xl border border-white/[0.06] p-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-3 w-24" />
+                <Skeleton className="h-8 w-8 rounded-lg" />
+              </div>
+              <Skeleton className="h-7 w-32" />
+            </div>
+          ))}
+        </div>
+        {/* Leaderboard skeleton */}
+        <div className="rounded-xl border border-white/[0.06] p-5 space-y-4">
+          <Skeleton className="h-5 w-40" />
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-3">
+              <Skeleton className="h-6 w-6 rounded-full" />
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-4 w-20 ml-auto" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
 
   if (!governors.length) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 text-muted-foreground gap-2">
-        <Crown className="h-12 w-12" />
-        <p className="text-lg font-medium">No data yet</p>
-        <p className="text-sm">Upload a governor snapshot to get started.</p>
+      <div className="flex flex-col items-center justify-center h-64 text-center page-transition">
+        <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+          <Crown className="h-8 w-8 text-primary" />
+        </div>
+        <h2 className="text-xl font-bold text-foreground">No Kingdom Data Yet</h2>
+        <p className="text-sm text-muted-foreground mt-1 max-w-sm">Upload a governor snapshot to see your kingdom's stats, leaderboards, and trends.</p>
       </div>
     );
   }
@@ -105,7 +135,7 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 page-transition">
       {/* Kingdom Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
         <div>

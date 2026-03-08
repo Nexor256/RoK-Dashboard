@@ -485,7 +485,7 @@ export default function KvKPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 page-transition">
       <div>
         <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight">
           <span className="text-gradient">KvK Performance</span>

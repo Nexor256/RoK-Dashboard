@@ -9,6 +9,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { CompareProvider } from "@/hooks/useCompare";
 import CompareDrawer, { CompareTray } from "@/components/CompareDrawer";
+import CommandPalette from "@/components/CommandPalette";
 
 const navItems = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -165,6 +166,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-[1800px] mx-auto w-full relative z-10">{children}</main>
       <CompareDrawer />
       <CompareTray />
+      <CommandPalette />
     </div>
     </CompareProvider>
   );

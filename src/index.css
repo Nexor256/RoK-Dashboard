@@ -280,14 +280,27 @@
     display: none;
   }
 
-  /* Subtle shimmer loading animation */
+  /* Shimmer animation for skeleton loaders */
   @keyframes shimmer {
-    0% { background-position: -400px 0; }
-    100% { background-position: 400px 0; }
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
   }
-  .animate-shimmer {
-    animation: shimmer 2s linear infinite;
-    background: linear-gradient(90deg, transparent 0%, hsl(var(--primary) / 0.04) 50%, transparent 100%);
-    background-size: 400px 100%;
+
+  /* Page fade-in transition */
+  @keyframes page-fade-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .page-transition {
+    animation: page-fade-in 0.3s ease-out;
+  }
+
+  /* Sticky table header */
+  .sticky-header thead th,
+  .sticky-header thead td {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: hsl(var(--background));
   }
 }

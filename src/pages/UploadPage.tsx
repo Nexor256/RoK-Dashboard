@@ -168,7 +168,7 @@ export default function UploadPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="space-y-6 max-w-5xl page-transition">
       <div>
         <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight">
           <span className="text-gradient">Upload Data</span>

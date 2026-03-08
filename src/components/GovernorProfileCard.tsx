@@ -37,7 +37,7 @@ import {
 function ChartTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-lg border border-border/60 bg-popover px-3 py-2 shadow-xl">
+    <div className="rounded-xl border border-white/[0.08] bg-background/95 backdrop-blur-xl px-3.5 py-2.5 shadow-2xl">
       <p className="text-xs font-semibold text-foreground mb-1.5">{label}</p>
       <div className="space-y-1">
         {payload.map((entry: any) => (
@@ -206,36 +206,45 @@ export default function GovernorProfileCard({
         if (!open) onClose();
       }}
     >
-      <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto border-white/[0.08] bg-background/95 backdrop-blur-xl shadow-2xl">
         <DialogHeader>
           <div className="flex items-center gap-3 flex-wrap">
-            <DialogTitle className="text-xl">{governor?.governor_name}</DialogTitle>
-            {!!governorId && governor?.governor_id === governorId && (
-              <Badge className="text-xs">You</Badge>
-            )}
-            {governor?.governor_id && (
-              <Badge variant="secondary" className="font-mono text-xs">
-                ID: {governor.governor_id}
-              </Badge>
-            )}
-            {governor?.alliance && (
-              <Badge variant="outline" className="text-xs">
-                [{governor.alliance}]
-              </Badge>
-            )}
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-violet-600 flex items-center justify-center shadow-lg glow-primary-sm">
+              <span className="text-primary-foreground font-bold text-sm">{governor?.governor_name?.[0]?.toUpperCase()}</span>
+            </div>
+            <div>
+              <DialogTitle className="text-xl font-display font-extrabold">
+                <span className="text-gradient">{governor?.governor_name}</span>
+              </DialogTitle>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                {!!governorId && governor?.governor_id === governorId && (
+                  <Badge className="text-[10px] px-1.5 py-0 leading-4 bg-primary/20 text-primary border-primary/30">You</Badge>
+                )}
+                {governor?.governor_id && (
+                  <Badge variant="secondary" className="font-mono text-[10px] px-1.5 py-0 leading-4 bg-white/[0.04] border-white/[0.08]">
+                    ID: {governor.governor_id}
+                  </Badge>
+                )}
+                {governor?.alliance && (
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 leading-4 border-white/[0.08]">
+                    [{governor.alliance}]
+                  </Badge>
+                )}
+              </div>
+            </div>
           </div>
         </DialogHeader>
 
         {governor && (
-          <Tabs defaultValue="overview" className="mt-1">
-            <TabsList className="w-full justify-start">
-              <TabsTrigger value="overview" className="gap-1.5 text-xs">
+          <Tabs defaultValue="overview" className="mt-2">
+            <TabsList className="w-full justify-start bg-white/[0.03] border border-white/[0.06] rounded-lg">
+              <TabsTrigger value="overview" className="gap-1.5 text-xs data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-md transition-all">
                 <Hash className="h-3.5 w-3.5" /> Overview
               </TabsTrigger>
-              <TabsTrigger value="trends" className="gap-1.5 text-xs">
+              <TabsTrigger value="trends" className="gap-1.5 text-xs data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-md transition-all">
                 <TrendingUp className="h-3.5 w-3.5" /> Trends
               </TabsTrigger>
-              <TabsTrigger value="kvk" className="gap-1.5 text-xs">
+              <TabsTrigger value="kvk" className="gap-1.5 text-xs data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-md transition-all">
                 <Swords className="h-3.5 w-3.5" /> KvK
               </TabsTrigger>
             </TabsList>
@@ -276,7 +285,7 @@ export default function GovernorProfileCard({
 function RankBadge({ entry }: { entry: RankEntry | undefined }) {
   if (!entry) return null;
   return (
-    <span className="text-[10px] text-muted-foreground font-medium ml-1">
+    <span className="text-[10px] text-muted-foreground/70 font-medium ml-1 tabular-nums">
       #{entry.rank}/{entry.total}
     </span>
   );
@@ -294,9 +303,9 @@ function StatCell({
   highlight?: boolean;
 }) {
   return (
-    <div className="space-y-0.5">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className={`font-semibold text-sm ${highlight ? "text-primary" : "text-foreground"}`}>
+    <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-2.5 space-y-1 hover:bg-white/[0.05] transition-colors duration-200">
+      <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{label}</p>
+      <p className={`font-bold text-sm tabular-nums ${highlight ? "text-primary" : "text-foreground"}`}>
         {value}
         <RankBadge entry={rank} />
       </p>
@@ -388,47 +397,47 @@ function TrendsTab({
   return (
     <div className="space-y-6">
       {/* Power over time */}
-      <div>
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+      <div className="rounded-lg bg-white/[0.02] border border-white/[0.06] p-3">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
           Power Over Time
         </p>
         <ResponsiveContainer width="100%" height={180}>
           <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-            <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-            <YAxis tick={{ fontSize: 10 }} tickFormatter={(v: number) => fmt(v)} />
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(228 10% 18%)" />
+            <XAxis dataKey="date" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+            <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickFormatter={(v: number) => fmt(v)} />
             <Tooltip content={<ChartTooltip />} />
             <Line
               type="monotone"
               dataKey="Power"
               stroke="hsl(var(--primary))"
-              strokeWidth={2}
-              dot={{ r: 3 }}
+              strokeWidth={2.5}
+              dot={{ r: 3, fill: "hsl(var(--primary))" }}
             />
           </LineChart>
         </ResponsiveContainer>
       </div>
 
       {/* Kill progression */}
-      <div>
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+      <div className="rounded-lg bg-white/[0.02] border border-white/[0.06] p-3">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
           Kill Progression
         </p>
         <ResponsiveContainer width="100%" height={180}>
           <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-            <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-            <YAxis tick={{ fontSize: 10 }} tickFormatter={(v: number) => fmt(v)} />
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(228 10% 18%)" />
+            <XAxis dataKey="date" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+            <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickFormatter={(v: number) => fmt(v)} />
             <Tooltip content={<ChartTooltip />} />
-            <Legend wrapperStyle={{ fontSize: 11 }} />
-            <Line type="monotone" dataKey="T4" stroke="#f59e0b" strokeWidth={2} dot={{ r: 2 }} />
-            <Line type="monotone" dataKey="T5" stroke="#ef4444" strokeWidth={2} dot={{ r: 2 }} />
+            <Legend wrapperStyle={{ fontSize: 11, color: "hsl(var(--foreground))" }} />
+            <Line type="monotone" dataKey="T4" stroke="#f59e0b" strokeWidth={2.5} dot={{ r: 2, fill: "#f59e0b" }} />
+            <Line type="monotone" dataKey="T5" stroke="#ef4444" strokeWidth={2.5} dot={{ r: 2, fill: "#ef4444" }} />
             <Line
               type="monotone"
               dataKey="Total Kills"
               stroke="#10b981"
-              strokeWidth={2}
-              dot={{ r: 2 }}
+              strokeWidth={2.5}
+              dot={{ r: 2, fill: "#10b981" }}
             />
           </LineChart>
         </ResponsiveContainer>
@@ -442,7 +451,7 @@ function TrendsTab({
 function KvKChartTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-lg border border-border/60 bg-popover px-3 py-2 shadow-xl">
+    <div className="rounded-xl border border-white/[0.08] bg-background/95 backdrop-blur-xl px-3.5 py-2.5 shadow-2xl">
       <p className="text-xs font-semibold text-foreground mb-1">{label}</p>
       {payload.map((entry: any) => (
         <div key={entry.dataKey} className="flex items-center justify-between gap-4 text-xs">
@@ -473,41 +482,41 @@ function KvKTab({ kvkData }: { kvkData: KvKExtras }) {
     <div className="space-y-4">
       {/* War summary table */}
       {warsWithGains.length > 0 ? (
-        <div className="rounded-lg border border-border/60 overflow-hidden">
+        <div className="rounded-lg border border-white/[0.06] overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-muted/50 text-xs text-muted-foreground uppercase tracking-wider">
-                <th className="text-left p-2 font-semibold">War</th>
-                <th className="text-right p-2 font-semibold">DKP</th>
-                <th className="text-right p-2 font-semibold">Kills</th>
-                <th className="text-right p-2 font-semibold">Deaths</th>
+              <tr className="bg-white/[0.02] text-xs text-muted-foreground uppercase tracking-wider">
+                <th className="text-left p-2.5 font-semibold">War</th>
+                <th className="text-right p-2.5 font-semibold">DKP</th>
+                <th className="text-right p-2.5 font-semibold">Kills</th>
+                <th className="text-right p-2.5 font-semibold">Deaths</th>
               </tr>
             </thead>
             <tbody>
               {warsWithGains.map((w) => (
-                <tr key={w.id} className="border-t border-border/40 hover:bg-muted/20">
-                  <td className="p-2">
+                <tr key={w.id} className="border-t border-white/[0.06] hover:bg-white/[0.03] transition-colors duration-200">
+                  <td className="p-2.5">
                     <span className="flex items-center gap-2">
-                      <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: w.color }} />
-                      {w.name}
+                      <span className="inline-block w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: w.color }} />
+                      <span className="font-medium">{w.name}</span>
                     </span>
                   </td>
-                  <td className="p-2 text-right font-semibold tabular-nums" style={{ color: w.color }}>
+                  <td className="p-2.5 text-right font-bold tabular-nums" style={{ color: w.color }}>
                     {fmt(w.gains!.dkp)}
                   </td>
-                  <td className="p-2 text-right tabular-nums text-muted-foreground">{fmt(w.gains!.kills_gained)}</td>
-                  <td className="p-2 text-right tabular-nums text-muted-foreground">{fmt(w.gains!.deaths_gained)}</td>
+                  <td className="p-2.5 text-right tabular-nums text-muted-foreground">{fmt(w.gains!.kills_gained)}</td>
+                  <td className="p-2.5 text-right tabular-nums text-muted-foreground">{fmt(w.gains!.deaths_gained)}</td>
                 </tr>
               ))}
             </tbody>
             <tfoot>
-              <tr className="border-t-2 border-border bg-muted/30">
-                <td className="p-2 font-bold">Total</td>
-                <td className="p-2 text-right font-bold text-primary tabular-nums">{fmt(totalDkp)}</td>
-                <td className="p-2 text-right font-semibold tabular-nums text-muted-foreground">
+              <tr className="border-t-2 border-white/[0.08] bg-white/[0.03]">
+                <td className="p-2.5 font-bold">Total</td>
+                <td className="p-2.5 text-right font-bold text-primary tabular-nums">{fmt(totalDkp)}</td>
+                <td className="p-2.5 text-right font-semibold tabular-nums text-muted-foreground">
                   {fmt(warsWithGains.reduce((s, w) => s + (w.gains?.kills_gained ?? 0), 0))}
                 </td>
-                <td className="p-2 text-right font-semibold tabular-nums text-muted-foreground">
+                <td className="p-2.5 text-right font-semibold tabular-nums text-muted-foreground">
                   {fmt(warsWithGains.reduce((s, w) => s + (w.gains?.deaths_gained ?? 0), 0))}
                 </td>
               </tr>
@@ -522,20 +531,20 @@ function KvKTab({ kvkData }: { kvkData: KvKExtras }) {
 
       {/* Mini bar chart */}
       {chartData.length > 0 && (
-        <div>
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+        <div className="rounded-lg bg-white/[0.02] border border-white/[0.06] p-3">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
             Performance per War
           </p>
           <ResponsiveContainer width="100%" height={160}>
             <BarChart data={chartData} barCategoryGap="20%">
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-              <YAxis tick={{ fontSize: 10 }} tickFormatter={(v: number) => fmt(v)} />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(228 10% 18%)" />
+              <XAxis dataKey="name" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+              <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickFormatter={(v: number) => fmt(v)} />
               <Tooltip content={<KvKChartTooltip />} />
-              <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Bar dataKey="DKP" fill="hsl(221, 83%, 53%)" radius={[3, 3, 0, 0]} />
-              <Bar dataKey="Kills" fill="hsl(142, 71%, 45%)" radius={[3, 3, 0, 0]} />
-              <Bar dataKey="Deaths" fill="hsl(0, 84%, 60%)" radius={[3, 3, 0, 0]} />
+              <Legend wrapperStyle={{ fontSize: 11, color: "hsl(var(--foreground))" }} />
+              <Bar dataKey="DKP" fill="hsl(221, 83%, 53%)" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Kills" fill="hsl(142, 71%, 45%)" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Deaths" fill="hsl(0, 84%, 60%)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -552,35 +561,38 @@ function KvKTab({ kvkData }: { kvkData: KvKExtras }) {
         const dkpOk = totalDkp >= tier.min_dkp;
         const deathsOk = totalDeaths >= tier.min_deaths;
         return (
-          <div className="border-t border-border pt-3 space-y-2">
-            <p className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
-              <Gauge className="h-4 w-4" /> Power Tier Requirements
+          <div className="border-t border-white/[0.06] pt-4 space-y-3">
+            <p className="text-sm font-bold text-foreground flex items-center gap-2">
+              <div className="h-6 w-6 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                <Gauge className="h-3.5 w-3.5 text-amber-400" />
+              </div>
+              Power Tier Requirements
             </p>
             <p className="text-xs text-muted-foreground">
               Tier: Power ≥ {fmt(tier.min_power)}
             </p>
             <div className="grid grid-cols-2 gap-3">
               <div
-                className={`rounded-lg p-2 ${dkpOk ? "bg-emerald-500/10" : "bg-destructive/10"}`}
+                className={`rounded-xl p-3 border ${dkpOk ? "bg-emerald-500/10 border-emerald-500/20" : "bg-destructive/10 border-destructive/20"}`}
               >
-                <p className="text-xs text-muted-foreground">Min DKP</p>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Min DKP</p>
                 <p
-                  className={`font-semibold ${dkpOk ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}
+                  className={`font-bold tabular-nums ${dkpOk ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}
                 >
                   {fmt(totalDkp)} / {fmt(tier.min_dkp)}
                 </p>
-                <p className="text-xs mt-0.5">{dkpOk ? "✓ Passed" : "✗ Below minimum"}</p>
+                <p className={`text-xs mt-0.5 font-medium ${dkpOk ? "text-emerald-500" : "text-destructive"}`}>{dkpOk ? "✓ Passed" : "✗ Below minimum"}</p>
               </div>
               <div
-                className={`rounded-lg p-2 ${deathsOk ? "bg-emerald-500/10" : "bg-destructive/10"}`}
+                className={`rounded-xl p-3 border ${deathsOk ? "bg-emerald-500/10 border-emerald-500/20" : "bg-destructive/10 border-destructive/20"}`}
               >
-                <p className="text-xs text-muted-foreground">Min Deaths</p>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Min Deaths</p>
                 <p
-                  className={`font-semibold ${deathsOk ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}
+                  className={`font-bold tabular-nums ${deathsOk ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}
                 >
                   {fmt(totalDeaths)} / {fmt(tier.min_deaths)}
                 </p>
-                <p className="text-xs mt-0.5">{deathsOk ? "✓ Passed" : "✗ Below minimum"}</p>
+                <p className={`text-xs mt-0.5 font-medium ${deathsOk ? "text-emerald-500" : "text-destructive"}`}>{deathsOk ? "✓ Passed" : "✗ Below minimum"}</p>
               </div>
             </div>
           </div>
