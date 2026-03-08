@@ -96,6 +96,8 @@ interface WarGains {
   t5_gained: number;
   kills_gained: number;
   deaths_gained: number;
+  power_gained: number;
+  kp_gained: number;
   dkp: number;
 }
 
@@ -157,12 +159,14 @@ function computeGains(
     const t5_gained = (gTo.t5_kills ?? 0) - (gFrom?.t5_kills ?? 0);
     const kills_gained = (gTo.total_kills ?? 0) - (gFrom?.total_kills ?? 0);
     const deaths_gained = (gTo.deaths ?? 0) - (gFrom?.deaths ?? 0);
+    const power_gained = (gTo.power ?? 0) - (gFrom?.power ?? 0);
+    const kp_gained = (gTo.killpoints ?? 0) - (gFrom?.killpoints ?? 0);
     const dkp =
       t4_gained * weights.t4_kills +
       t5_gained * weights.t5_kills +
       deaths_gained * weights.deaths;
     const key = gTo.governor_id || gTo.governor_name;
-    map.set(key, { t4_gained, t5_gained, kills_gained, deaths_gained, dkp });
+    map.set(key, { t4_gained, t5_gained, kills_gained, deaths_gained, power_gained, kp_gained, dkp });
   }
   return map;
 }
@@ -173,6 +177,11 @@ function warColor(index: number) {
 
 function warBgColor(index: number) {
   return WAR_BG_COLORS[index % WAR_BG_COLORS.length];
+}
+
+/** Helper to get aggregated stat for a governor across all wars */
+function aggStat(g: KvKRow, key: keyof WarGains): number {
+  return Object.values(g.wars).reduce((s, w) => s + (w[key] as number), 0);
 }
 
 /* ─── page component ─────────────────────────────────────────── */
@@ -315,9 +324,25 @@ export default function KvKPage() {
         return sortDir === "desc" ? b.totalDkp - a.totalDkp : a.totalDkp - b.totalDkp;
       }
       if (sortKey === "totalDeaths") {
-        const ad = Object.values(a.wars).reduce((s, w) => s + w.deaths_gained, 0);
-        const bd = Object.values(b.wars).reduce((s, w) => s + w.deaths_gained, 0);
+        const ad = aggStat(a, "deaths_gained");
+        const bd = aggStat(b, "deaths_gained");
         return sortDir === "desc" ? bd - ad : ad - bd;
+      }
+      if (sortKey === "agg_power") {
+        const av = aggStat(a, "power_gained"), bv = aggStat(b, "power_gained");
+        return sortDir === "desc" ? bv - av : av - bv;
+      }
+      if (sortKey === "agg_t5") {
+        const av = aggStat(a, "t5_gained"), bv = aggStat(b, "t5_gained");
+        return sortDir === "desc" ? bv - av : av - bv;
+      }
+      if (sortKey === "agg_t4") {
+        const av = aggStat(a, "t4_gained"), bv = aggStat(b, "t4_gained");
+        return sortDir === "desc" ? bv - av : av - bv;
+      }
+      if (sortKey === "agg_kp") {
+        const av = aggStat(a, "kp_gained"), bv = aggStat(b, "kp_gained");
+        return sortDir === "desc" ? bv - av : av - bv;
       }
       if (sortKey.startsWith("war_")) {
         const warId = sortKey.slice(4);
@@ -958,9 +983,13 @@ export default function KvKPage() {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-white/[0.02] hover:bg-white/[0.02] border-b border-white/[0.06]">
-                      <TableHead className="w-10">#</TableHead>
+                      <TableHead>#</TableHead>
                       {sortableHead("Governor", "governor_name")}
                       <TableHead>Alliance</TableHead>
+                      {sortableHead("Power \u0394", "agg_power")}
+                      {sortableHead("T5 Kills", "agg_t5")}
+                      {sortableHead("T4 Kills", "agg_t4")}
+                      {sortableHead("KP \u0394", "agg_kp")}
                       {validWars.map((w, i) => (
                         <TableHead
                           key={w.id}
@@ -978,8 +1007,8 @@ export default function KvKPage() {
                           </span>
                         </TableHead>
                       ))}
-                      {sortableHead("Total DKP", "totalDkp", "border-l border-border/40")}
-                      {sortableHead("Total Deaths", "totalDeaths")}
+                      {sortableHead("Total Deaths", "totalDeaths", "border-l border-border/40")}
+                      {sortableHead("Total DKP", "totalDkp")}
                       <TableHead className="text-center">Wars</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -1012,6 +1041,36 @@ export default function KvKPage() {
                           <TableCell className="text-muted-foreground text-sm">
                             {g.alliance ?? "—"}
                           </TableCell>
+                          {/* Aggregated stat columns */}
+                          <TableCell className="text-sm tabular-nums">
+                            {(() => { const v = aggStat(g, "power_gained"); return (
+                              <span className={v >= 0 ? "text-emerald-500" : "text-red-400"}>
+                                {v > 0 ? "↑ " : v < 0 ? "↓ " : ""}{fmt(v)}
+                              </span>
+                            ); })()}
+                          </TableCell>
+                          <TableCell className="text-sm tabular-nums">
+                            {(() => { const v = aggStat(g, "t5_gained"); return (
+                              <span className={v > 0 ? "text-violet-400" : "text-muted-foreground"}>
+                                {v > 0 && "↑ "}{fmt(v)}
+                              </span>
+                            ); })()}
+                          </TableCell>
+                          <TableCell className="text-sm tabular-nums">
+                            {(() => { const v = aggStat(g, "t4_gained"); return (
+                              <span className={v > 0 ? "text-indigo-400" : "text-muted-foreground"}>
+                                {v > 0 && "↑ "}{fmt(v)}
+                              </span>
+                            ); })()}
+                          </TableCell>
+                          <TableCell className="text-sm tabular-nums">
+                            {(() => { const v = aggStat(g, "kp_gained"); return (
+                              <span className={v > 0 ? "text-sky-400" : "text-muted-foreground"}>
+                                {v > 0 && "↑ "}{fmt(v)}
+                              </span>
+                            ); })()}
+                          </TableCell>
+                          {/* Per-war DKP columns */}
                           {validWars.map((w, wi) => {
                             const wg = g.wars[w.id];
                             return (
@@ -1035,25 +1094,7 @@ export default function KvKPage() {
                               </TableCell>
                             );
                           })}
-                          <TableCell className={`font-bold text-sm tabular-nums border-l border-border/40 ${dkpBelow ? "text-destructive" : "text-primary"}`}>
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <span className="inline-flex items-center gap-1">
-                                    {dkpBelow && <AlertTriangle className="h-3.5 w-3.5" />}
-                                    {fmt(g.totalDkp)}
-                                  </span>
-                                </TooltipTrigger>
-                                {tier && (
-                                  <TooltipContent>
-                                    <p className="text-xs">Required DKP: {fmt(tier.min_dkp)}</p>
-                                    <p className="text-xs">Actual: {fmt(g.totalDkp)}</p>
-                                  </TooltipContent>
-                                )}
-                              </Tooltip>
-                            </TooltipProvider>
-                          </TableCell>
-                          <TableCell className={`text-sm tabular-nums ${deathsBelow ? "text-destructive font-bold" : "text-muted-foreground"}`}>
+                          <TableCell className={`text-sm tabular-nums border-l border-border/40 ${deathsBelow ? "text-destructive font-bold" : "text-muted-foreground"}`}>
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
@@ -1071,15 +1112,32 @@ export default function KvKPage() {
                               </Tooltip>
                             </TooltipProvider>
                           </TableCell>
+                          <TableCell className={`font-bold text-sm tabular-nums ${dkpBelow ? "text-destructive" : "text-primary"}`}>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="inline-flex items-center gap-1">
+                                    {dkpBelow && <AlertTriangle className="h-3.5 w-3.5" />}
+                                    {fmt(g.totalDkp)}
+                                  </span>
+                                </TooltipTrigger>
+                                {tier && (
+                                  <TooltipContent>
+                                    <p className="text-xs">Required DKP: {fmt(tier.min_dkp)}</p>
+                                    <p className="text-xs">Actual: {fmt(g.totalDkp)}</p>
+                                  </TooltipContent>
+                                )}
+                              </Tooltip>
+                            </TooltipProvider>
+                          </TableCell>
                           <TableCell className="text-center text-xs tabular-nums">
                             <span
-                              className={`inline-flex items-center rounded-full px-2 py-0.5 font-medium ${
-                                participated === validWars.length
+                              className={`inline-flex items-center rounded-full px-2 py-0.5 font-medium ${participated === validWars.length
                                   ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                                   : participated === 0
                                     ? "bg-rose-500/10 text-rose-600 dark:text-rose-400"
                                     : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                              }`}
+                                }`}
                             >
                               {participated}/{validWars.length}
                             </span>
@@ -1096,6 +1154,19 @@ export default function KvKPage() {
                         Totals
                       </TableCell>
                       <TableCell />
+                      {/* Aggregated stat column totals */}
+                      <TableCell className="text-sm tabular-nums text-emerald-500">
+                        {fmt(filtered.reduce((s, g) => s + aggStat(g, "power_gained"), 0))}
+                      </TableCell>
+                      <TableCell className="text-sm tabular-nums text-violet-400">
+                        {fmt(filtered.reduce((s, g) => s + aggStat(g, "t5_gained"), 0))}
+                      </TableCell>
+                      <TableCell className="text-sm tabular-nums text-indigo-400">
+                        {fmt(filtered.reduce((s, g) => s + aggStat(g, "t4_gained"), 0))}
+                      </TableCell>
+                      <TableCell className="text-sm tabular-nums text-sky-400">
+                        {fmt(filtered.reduce((s, g) => s + aggStat(g, "kp_gained"), 0))}
+                      </TableCell>
                       {validWars.map((w, wi) => {
                         const wt = warTotals[w.id];
                         return (
@@ -1115,11 +1186,11 @@ export default function KvKPage() {
                           </TableCell>
                         );
                       })}
-                      <TableCell className="font-bold text-primary text-sm tabular-nums border-l border-border/40">
-                        {fmt(filtered.reduce((s, g) => s + g.totalDkp, 0))}
-                      </TableCell>
-                      <TableCell className="text-sm tabular-nums text-muted-foreground">
+                      <TableCell className="text-sm tabular-nums text-muted-foreground border-l border-border/40">
                         {fmt(filtered.reduce((s, g) => s + Object.values(g.wars).reduce((ws, w) => ws + w.deaths_gained, 0), 0))}
+                      </TableCell>
+                      <TableCell className="font-bold text-primary text-sm tabular-nums">
+                        {fmt(filtered.reduce((s, g) => s + g.totalDkp, 0))}
                       </TableCell>
                       <TableCell />
                     </TableRow>
@@ -1136,16 +1207,16 @@ export default function KvKPage() {
             kvkData={
               selectedGov
                 ? {
-                    wars: validWars.map((w, i) => ({
-                      id: w.id,
-                      name: w.name,
-                      color: warColor(i),
-                      gains: selectedGov.wars[w.id],
-                    })),
-                    totalDkp: selectedGov.totalDkp,
-                    tiers,
-                    power: selectedGov.power,
-                  }
+                  wars: validWars.map((w, i) => ({
+                    id: w.id,
+                    name: w.name,
+                    color: warColor(i),
+                    gains: selectedGov.wars[w.id],
+                  })),
+                  totalDkp: selectedGov.totalDkp,
+                  tiers,
+                  power: selectedGov.power,
+                }
                 : undefined
             }
           />

@@ -26,8 +26,7 @@ import { Badge } from "@/components/ui/badge";
 import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { ArrowUpDown, ChevronLeft, ChevronRight, Download, Search, Loader2, TrendingUp, TrendingDown, Columns3, Palette, BookmarkPlus, Bookmark, X } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Sparkline } from "@/components/Sparkline";
-import { useRecentTrends } from "@/hooks/useRecentTrends";
+
 
 type SortKey =
   | "governor_name" | "alliance" | "power" | "t1_kills" | "t2_kills" | "t3_kills"
@@ -133,7 +132,7 @@ export default function RankingsPage() {
   const { data, isLoading } = useLatestGovernorStats();
   const governors = data?.governors ?? [];
   const { data: prevData } = usePreviousGovernorStats();
-  const { data: trendMap } = useRecentTrends();
+
   const { data: tiers } = useKvKThresholds();
   const { governorId } = useAuth();
   const { data: prefs } = useUserPreferences();
@@ -535,12 +534,6 @@ export default function RankingsPage() {
                               <div className="flex items-center gap-1.5">
                                 {fmt(g.power ?? 0)}
                                 <Trend current={g.power ?? 0} previous={prev?.power ?? undefined} />
-                                {(() => {
-                                  const key = g.governor_id || g.governor_name;
-                                  const td = trendMap?.get(key);
-                                  const pts = td?.power.filter((v): v is number => v !== null) ?? [];
-                                  return pts.length >= 2 ? <Sparkline data={pts} /> : null;
-                                })()}
                               </div>
                             </TableCell>
                           )}
@@ -549,12 +542,6 @@ export default function RankingsPage() {
                               <div className="flex items-center gap-1.5">
                                 {fmt(g.killpoints ?? 0)}
                                 <Trend current={g.killpoints ?? 0} previous={prev?.killpoints ?? undefined} />
-                                {(() => {
-                                  const key = g.governor_id || g.governor_name;
-                                  const td = trendMap?.get(key);
-                                  const pts = td?.killpoints.filter((v): v is number => v !== null) ?? [];
-                                  return pts.length >= 2 ? <Sparkline data={pts} /> : null;
-                                })()}
                               </div>
                             </TableCell>
                           )}
