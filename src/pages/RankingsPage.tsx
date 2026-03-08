@@ -325,7 +325,9 @@ export default function RankingsPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight">Governor Rankings</h1>
+        <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight">
+          <span className="text-gradient">Governor Rankings</span>
+        </h1>
         <p className="text-sm text-muted-foreground mt-1">Detailed stats for all governors in the kingdom</p>
       </div>
 
@@ -337,11 +339,11 @@ export default function RankingsPage() {
             placeholder="Search name or ID..."
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(0); }}
-            className="pl-9 bg-card border-border/60"
+            className="pl-9 bg-white/[0.04] border-white/[0.06] focus:border-primary/50 transition-colors"
           />
         </div>
         <Select value={allianceFilter} onValueChange={(v) => { setAllianceFilter(v); setPage(0); }}>
-          <SelectTrigger className="w-[160px] bg-card border-border/60">
+          <SelectTrigger className="w-[160px] bg-white/[0.04] border-white/[0.06]">
             <SelectValue placeholder="All Alliances" />
           </SelectTrigger>
           <SelectContent>
@@ -352,7 +354,7 @@ export default function RankingsPage() {
           </SelectContent>
         </Select>
         <Select value={String(perPage)} onValueChange={(v) => { setPerPage(Number(v)); setPage(0); }}>
-          <SelectTrigger className="w-[120px] bg-card border-border/60">
+          <SelectTrigger className="w-[120px] bg-white/[0.04] border-white/[0.06]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -361,14 +363,14 @@ export default function RankingsPage() {
             ))}
           </SelectContent>
         </Select>
-        <Button variant="outline" size="sm" onClick={downloadCSV} className="gap-1.5 rounded-lg">
+        <Button variant="outline" size="sm" onClick={downloadCSV} className="gap-1.5 rounded-lg border-white/[0.06] hover:bg-white/[0.06]">
           <Download className="h-4 w-4" /> Export CSV
         </Button>
 
         {/* Column visibility toggle */}
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" className="gap-1.5 rounded-lg">
+            <Button variant="outline" size="sm" className="gap-1.5 rounded-lg border-white/[0.06] hover:bg-white/[0.06]">
               <Columns3 className="h-4 w-4" /> Columns
             </Button>
           </PopoverTrigger>
@@ -397,7 +399,7 @@ export default function RankingsPage() {
           variant={heatmapOn ? "default" : "outline"}
           size="sm"
           onClick={() => setHeatmapOn(!heatmapOn)}
-          className="gap-1.5 rounded-lg"
+          className="gap-1.5 rounded-lg border-white/[0.06] hover:bg-white/[0.06]"
         >
           <Palette className="h-4 w-4" /> Heatmap
         </Button>
@@ -405,7 +407,7 @@ export default function RankingsPage() {
         {/* Presets dropdown */}
         {presets.length > 0 && (
           <Select value={activePreset} onValueChange={loadPreset}>
-            <SelectTrigger className="w-[160px] bg-card border-border/60">
+            <SelectTrigger className="w-[160px] bg-white/[0.04] border-white/[0.06]">
               <Bookmark className="h-3.5 w-3.5 mr-1.5 shrink-0" />
               <SelectValue placeholder="Presets" />
             </SelectTrigger>
@@ -419,7 +421,7 @@ export default function RankingsPage() {
         )}
 
         {/* Save preset */}
-        <Button variant="outline" size="sm" onClick={() => setShowSavePreset(true)} className="gap-1.5 rounded-lg">
+        <Button variant="outline" size="sm" onClick={() => setShowSavePreset(true)} className="gap-1.5 rounded-lg border-white/[0.06] hover:bg-white/[0.06]">
           <BookmarkPlus className="h-4 w-4" /> Save Preset
         </Button>
       </div>
@@ -436,11 +438,11 @@ export default function RankingsPage() {
       )}
 
       {/* Table */}
-      <Card className="border-border/60 overflow-hidden">
-        <div className="overflow-x-auto">
-          <Table>
+      <Card className="border-white/[0.06] overflow-hidden glass-panel">
+        <div className="overflow-x-auto scrollbar-hide">
+          <Table className="w-full">
             <TableHeader>
-              <TableRow className="bg-muted/50 hover:bg-muted/50 border-b border-border">
+              <TableRow className="bg-white/[0.02] hover:bg-white/[0.02] border-b border-white/[0.06]">
                 <TableHead className="w-10 text-center">#</TableHead>
                 {visibleColumns.map((col) => (
                   <TableHead key={col.key}>
@@ -465,114 +467,114 @@ export default function RankingsPage() {
               {paged.map((g, i) => {
                 const isMe = !!governorId && g.governor_id === governorId;
                 return (
-                <TableRow key={g.id} className={isMe ? "hover:bg-primary/10 transition-colors border-l-2 border-l-primary bg-primary/5" : "hover:bg-muted/30 transition-colors even:bg-muted/10"}>
-                  <TableCell className="text-center text-muted-foreground text-xs font-medium">
-                    {page * perPage + i + 1}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1.5">
-                    <ContextMenu>
-                      <ContextMenuTrigger asChild>
-                        <button
-                          onClick={() => setSelectedGov(g)}
-                          className="font-semibold text-primary hover:underline cursor-pointer text-left text-sm"
-                        >
-                          {g.governor_name}
-                        </button>
-                      </ContextMenuTrigger>
-                      <CompareContextMenuContent gov={g} onViewProfile={() => setSelectedGov(g)} />
-                    </ContextMenu>
-                    {isMe && <Badge className="text-[10px] px-1.5 py-0 leading-4">You</Badge>}
-                    </div>
-                  </TableCell>
-                  {visibleKeys.includes("alliance") && (
-                    <TableCell>
-                      <span className="text-muted-foreground text-sm">{g.alliance ?? "—"}</span>
+                  <TableRow key={g.id} className={isMe ? "hover:bg-primary/10 transition-colors duration-200 border-l-2 border-l-primary bg-primary/5" : "hover:bg-white/[0.03] transition-colors duration-200 even:bg-white/[0.015]"}>
+                    <TableCell className="text-center text-muted-foreground text-xs font-medium">
+                      {page * perPage + i + 1}
                     </TableCell>
-                  )}
-                  {(() => {
-                    const prev = g.governor_id ? prevMap.get(g.governor_id) : undefined;
-                    const tier = tiers?.length && g.power ? findTier(g.power, tiers) : null;
-                    const show = (key: string) => visibleKeys.includes(key);
-                    const hm = (key: string, value: number): React.CSSProperties | undefined => {
-                      if (!heatmapOn || !HEATMAP_KEYS.has(key)) return undefined;
-                      const r = heatRanges[key];
-                      return r ? heatmapStyle(value, r.min, r.max, isDark) : undefined;
-                    };
-                    return (
-                      <>
-                        {show("power") && (
-                          <TableCell className="font-semibold text-sm tabular-nums" style={hm("power", g.power ?? 0)}>
-                            {fmt(g.power ?? 0)}
-                            <Trend current={g.power ?? 0} previous={prev?.power ?? undefined} />
-                          </TableCell>
-                        )}
-                        {show("killpoints") && (
-                          <TableCell className="text-primary font-semibold text-sm tabular-nums" style={hm("killpoints", g.killpoints ?? 0)}>
-                            {fmt(g.killpoints ?? 0)}
-                            <Trend current={g.killpoints ?? 0} previous={prev?.killpoints ?? undefined} />
-                          </TableCell>
-                        )}
-                        {show("t4_kills") && (
-                          <TableCell className="text-sm tabular-nums" style={hm("t4_kills", g.t4_kills ?? 0)}>
-                            {fmt(g.t4_kills ?? 0)}
-                            <Trend current={g.t4_kills ?? 0} previous={prev?.t4_kills ?? undefined} />
-                          </TableCell>
-                        )}
-                        {show("t5_kills") && (
-                          <TableCell className="text-sm tabular-nums" style={hm("t5_kills", g.t5_kills ?? 0)}>
-                            {fmt(g.t5_kills ?? 0)}
-                            <Trend current={g.t5_kills ?? 0} previous={prev?.t5_kills ?? undefined} />
-                          </TableCell>
-                        )}
-                        {show("t45_kills") && (
-                          <TableCell className="text-sm tabular-nums">
-                            {fmt(g.t45_kills ?? 0)}
-                            <Trend current={g.t45_kills ?? 0} previous={prev?.t45_kills ?? undefined} />
-                          </TableCell>
-                        )}
-                        {show("total_kills") && (
-                          <TableCell className="text-sm tabular-nums">
-                            {fmt(g.total_kills ?? 0)}
-                            <Trend current={g.total_kills ?? 0} previous={prev?.total_kills ?? undefined} />
-                          </TableCell>
-                        )}
-                        {show("deaths") && (
-                          <TableCell className="text-sm tabular-nums" style={hm("deaths", g.deaths ?? 0)}>
-                            {fmt(g.deaths ?? 0)}
-                            <Trend current={g.deaths ?? 0} previous={prev?.deaths ?? undefined} />
-                          </TableCell>
-                        )}
-                        {show("ranged") && (
-                          <TableCell className="text-sm tabular-nums">{fmt(g.ranged ?? 0)}</TableCell>
-                        )}
-                        {show("resource_gathered") && (
-                          <TableCell className="text-sm tabular-nums">
-                            {fmt(g.resource_gathered ?? 0)}
-                            <Trend current={g.resource_gathered ?? 0} previous={prev?.resource_gathered ?? undefined} />
-                          </TableCell>
-                        )}
-                        {show("helps") && (
-                          <TableCell className="text-sm tabular-nums">{fmt(g.helps ?? 0)}</TableCell>
-                        )}
-                        {show("city_hall_level") && (
-                          <TableCell className="text-sm">{g.city_hall_level ?? "—"}</TableCell>
-                        )}
-                        {tier && (
-                          <>
-                            <TableCell>
-                              <ProgressBar current={g.deaths ?? 0} goal={tier.min_deaths} label="Deaths" />
+                    <TableCell>
+                      <div className="flex items-center gap-1.5">
+                        <ContextMenu>
+                          <ContextMenuTrigger asChild>
+                            <button
+                              onClick={() => setSelectedGov(g)}
+                              className="font-semibold text-primary hover:underline cursor-pointer text-left text-sm"
+                            >
+                              {g.governor_name}
+                            </button>
+                          </ContextMenuTrigger>
+                          <CompareContextMenuContent gov={g} onViewProfile={() => setSelectedGov(g)} />
+                        </ContextMenu>
+                        {isMe && <Badge className="text-[10px] px-1.5 py-0 leading-4">You</Badge>}
+                      </div>
+                    </TableCell>
+                    {visibleKeys.includes("alliance") && (
+                      <TableCell>
+                        <span className="text-muted-foreground text-sm">{g.alliance ?? "—"}</span>
+                      </TableCell>
+                    )}
+                    {(() => {
+                      const prev = g.governor_id ? prevMap.get(g.governor_id) : undefined;
+                      const tier = tiers?.length && g.power ? findTier(g.power, tiers) : null;
+                      const show = (key: string) => visibleKeys.includes(key);
+                      const hm = (key: string, value: number): React.CSSProperties | undefined => {
+                        if (!heatmapOn || !HEATMAP_KEYS.has(key)) return undefined;
+                        const r = heatRanges[key];
+                        return r ? heatmapStyle(value, r.min, r.max, isDark) : undefined;
+                      };
+                      return (
+                        <>
+                          {show("power") && (
+                            <TableCell className="font-semibold text-sm tabular-nums" style={hm("power", g.power ?? 0)}>
+                              {fmt(g.power ?? 0)}
+                              <Trend current={g.power ?? 0} previous={prev?.power ?? undefined} />
                             </TableCell>
-                            <TableCell>
-                              <ProgressBar current={g.killpoints ?? 0} goal={tier.min_dkp} label="Kill Points" />
+                          )}
+                          {show("killpoints") && (
+                            <TableCell className="text-primary font-semibold text-sm tabular-nums" style={hm("killpoints", g.killpoints ?? 0)}>
+                              {fmt(g.killpoints ?? 0)}
+                              <Trend current={g.killpoints ?? 0} previous={prev?.killpoints ?? undefined} />
                             </TableCell>
-                          </>
-                        )}
-                      </>
-                    );
-                  })()}
-                </TableRow>
-              );
+                          )}
+                          {show("t4_kills") && (
+                            <TableCell className="text-sm tabular-nums" style={hm("t4_kills", g.t4_kills ?? 0)}>
+                              {fmt(g.t4_kills ?? 0)}
+                              <Trend current={g.t4_kills ?? 0} previous={prev?.t4_kills ?? undefined} />
+                            </TableCell>
+                          )}
+                          {show("t5_kills") && (
+                            <TableCell className="text-sm tabular-nums" style={hm("t5_kills", g.t5_kills ?? 0)}>
+                              {fmt(g.t5_kills ?? 0)}
+                              <Trend current={g.t5_kills ?? 0} previous={prev?.t5_kills ?? undefined} />
+                            </TableCell>
+                          )}
+                          {show("t45_kills") && (
+                            <TableCell className="text-sm tabular-nums">
+                              {fmt(g.t45_kills ?? 0)}
+                              <Trend current={g.t45_kills ?? 0} previous={prev?.t45_kills ?? undefined} />
+                            </TableCell>
+                          )}
+                          {show("total_kills") && (
+                            <TableCell className="text-sm tabular-nums">
+                              {fmt(g.total_kills ?? 0)}
+                              <Trend current={g.total_kills ?? 0} previous={prev?.total_kills ?? undefined} />
+                            </TableCell>
+                          )}
+                          {show("deaths") && (
+                            <TableCell className="text-sm tabular-nums" style={hm("deaths", g.deaths ?? 0)}>
+                              {fmt(g.deaths ?? 0)}
+                              <Trend current={g.deaths ?? 0} previous={prev?.deaths ?? undefined} />
+                            </TableCell>
+                          )}
+                          {show("ranged") && (
+                            <TableCell className="text-sm tabular-nums">{fmt(g.ranged ?? 0)}</TableCell>
+                          )}
+                          {show("resource_gathered") && (
+                            <TableCell className="text-sm tabular-nums">
+                              {fmt(g.resource_gathered ?? 0)}
+                              <Trend current={g.resource_gathered ?? 0} previous={prev?.resource_gathered ?? undefined} />
+                            </TableCell>
+                          )}
+                          {show("helps") && (
+                            <TableCell className="text-sm tabular-nums">{fmt(g.helps ?? 0)}</TableCell>
+                          )}
+                          {show("city_hall_level") && (
+                            <TableCell className="text-sm">{g.city_hall_level ?? "—"}</TableCell>
+                          )}
+                          {tier && (
+                            <>
+                              <TableCell>
+                                <ProgressBar current={g.deaths ?? 0} goal={tier.min_deaths} label="Deaths" />
+                              </TableCell>
+                              <TableCell>
+                                <ProgressBar current={g.killpoints ?? 0} goal={tier.min_dkp} label="Kill Points" />
+                              </TableCell>
+                            </>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </TableRow>
+                );
               })}
             </TableBody>
           </Table>
@@ -590,10 +592,10 @@ export default function RankingsPage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-sm text-muted-foreground">
         <span>Showing <strong className="text-foreground">{page * perPage + 1}–{Math.min((page + 1) * perPage, filtered.length)}</strong> of {filtered.length}</span>
         <div className="flex gap-1.5">
-          <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(page - 1)} className="rounded-lg">
+          <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(page - 1)} className="rounded-lg border-white/[0.06] hover:bg-white/[0.06]">
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)} className="rounded-lg">
+          <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)} className="rounded-lg border-white/[0.06] hover:bg-white/[0.06]">
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
@@ -611,7 +613,7 @@ export default function RankingsPage() {
             value={presetName}
             onChange={(e) => setPresetName(e.target.value)}
             maxLength={50}
-            className="bg-card border-border/60"
+            className="bg-white/[0.04] border-white/[0.06] focus:border-primary/50 transition-colors"
             onKeyDown={(e) => e.key === "Enter" && savePreset()}
           />
           <div className="flex justify-end gap-2">

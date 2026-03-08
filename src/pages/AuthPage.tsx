@@ -40,27 +40,54 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader className="text-center">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <Crown className="h-7 w-7 text-primary" />
-            <span className="font-display text-xl font-bold text-primary">ROK Tracker</span>
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
+      {/* Decorative background elements */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-primary/5 blur-[120px] animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 rounded-full bg-violet-500/5 blur-[100px] animate-pulse" style={{ animationDelay: "1s" }} />
+      </div>
+
+      <Card className="w-full max-w-sm glass-panel border-gradient relative z-10">
+        <CardHeader className="text-center pb-2">
+          <div className="flex items-center justify-center gap-2.5 mb-3">
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-violet-600 flex items-center justify-center shadow-lg glow-primary">
+              <Crown className="h-5 w-5 text-primary-foreground drop-shadow" />
+            </div>
           </div>
-          <CardTitle>Sign In</CardTitle>
+          <span className="font-display text-2xl font-bold text-gradient block mb-1">ROK Tracker</span>
+          <CardTitle className="text-lg">Sign In</CardTitle>
           <CardDescription>Sign in with your Governor ID</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="governorId">Governor ID</Label>
-              <Input id="governorId" value={governorId} onChange={(e) => setGovernorId(e.target.value)} placeholder="e.g. 12345678" required />
+              <Label htmlFor="governorId" className="text-sm font-medium">Governor ID</Label>
+              <Input
+                id="governorId"
+                value={governorId}
+                onChange={(e) => setGovernorId(e.target.value)}
+                placeholder="e.g. 12345678"
+                required
+                className="bg-white/[0.04] border-white/[0.08] focus:border-primary/50 transition-colors"
+              />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
+              <Label htmlFor="password" className="text-sm font-medium">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+                className="bg-white/[0.04] border-white/[0.08] focus:border-primary/50 transition-colors"
+              />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button
+              type="submit"
+              className="w-full bg-gradient-to-r from-primary to-violet-600 hover:from-primary/90 hover:to-violet-600/90 shadow-lg glow-primary-sm transition-all duration-300 hover:shadow-xl"
+              disabled={loading}
+            >
               {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Sign In
             </Button>

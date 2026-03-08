@@ -29,34 +29,37 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const navLinks = (onClick?: () => void) => (
     <>
-      {visibleItems.map((item) => (
-        <Link
-          key={item.to}
-          to={item.to}
-          onClick={onClick}
-          className={cn(
-            "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200",
-            pathname === item.to
-              ? "bg-primary text-primary-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted"
-          )}
-        >
-          <item.icon className="h-4 w-4" />
-          {item.label}
-        </Link>
-      ))}
+      {visibleItems.map((item) => {
+        const isActive = pathname === item.to;
+        return (
+          <Link
+            key={item.to}
+            to={item.to}
+            onClick={onClick}
+            className={cn(
+              "group relative flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300",
+              isActive
+                ? "bg-primary text-primary-foreground shadow-md glow-primary-sm"
+                : "text-muted-foreground hover:text-foreground hover:bg-white/[0.06]"
+            )}
+          >
+            <item.icon className={cn("h-4 w-4 transition-transform duration-300", !isActive && "group-hover:scale-110")} />
+            {item.label}
+          </Link>
+        );
+      })}
       {isAdmin && (
         <Link
           to="/manage-users"
           onClick={onClick}
           className={cn(
-            "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200",
+            "group relative flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300",
             pathname === "/manage-users"
-              ? "bg-primary text-primary-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted"
+              ? "bg-primary text-primary-foreground shadow-md glow-primary-sm"
+              : "text-muted-foreground hover:text-foreground hover:bg-white/[0.06]"
           )}
         >
-          <Shield className="h-4 w-4" />
+          <Shield className={cn("h-4 w-4 transition-transform duration-300", pathname !== "/manage-users" && "group-hover:scale-110")} />
           Users
         </Link>
       )}
@@ -65,26 +68,37 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <CompareProvider>
-    <div className="min-h-screen flex flex-col">
-      <header className="sticky top-0 z-50 border-b border-border/60 glass px-4 sm:px-6 py-3 flex items-center justify-between">
+    <div className="min-h-screen flex flex-col relative">
+      {/* ── Header ─────────────────────────────────────────── */}
+      <header className="sticky top-0 z-50 glass px-4 sm:px-6 py-3 flex items-center justify-between transition-shadow duration-300 hover:shadow-lg">
+        {/* Logo */}
         <div className="flex items-center gap-2.5 sm:gap-3">
-          <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-lg bg-primary flex items-center justify-center shadow-sm">
-            <Crown className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" />
+          <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl bg-gradient-to-br from-primary to-violet-600 flex items-center justify-center shadow-md glow-primary-sm transition-transform duration-300 hover:scale-105">
+            <Crown className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground drop-shadow" />
           </div>
           <span className="font-display text-lg sm:text-xl font-bold tracking-tight text-foreground">
-            ROK Dashboard
+            ROK <span className="text-gradient">Dashboard</span>
           </span>
         </div>
 
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-1">
           {navLinks()}
-          <div className="ml-3 pl-3 border-l border-border/60 flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground" onClick={toggleTheme}>
-              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          <div className="ml-3 pl-3 border-l border-white/[0.08] flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-white/[0.06] transition-all duration-300"
+              onClick={toggleTheme}
+            >
+              {theme === "dark" ? (
+                <Sun className="h-4 w-4 transition-transform duration-500 hover:rotate-45" />
+              ) : (
+                <Moon className="h-4 w-4 transition-transform duration-500 hover:-rotate-12" />
+              )}
             </Button>
             <div className="flex items-center gap-2 pl-1">
-              <Avatar className="h-7 w-7 ring-2 ring-primary/20">
+              <Avatar className="h-7 w-7 ring-2 ring-primary/30 transition-all duration-300 hover:ring-primary/60">
                 <AvatarImage src={profile?.avatar_url || ""} />
                 <AvatarFallback className="text-xs bg-primary/10 text-primary font-semibold">{profile?.display_name?.[0]?.toUpperCase() || "?"}</AvatarFallback>
               </Avatar>
@@ -92,7 +106,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 {profile?.display_name || "Admin"}
               </span>
             </div>
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-muted-foreground hover:text-destructive" onClick={signOut}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-300"
+              onClick={signOut}
+            >
               <LogOut className="h-4 w-4" />
             </Button>
           </div>
@@ -100,19 +119,25 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
         {/* Mobile nav */}
         <div className="flex md:hidden items-center gap-1.5">
-          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground" onClick={toggleTheme}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-white/[0.06] transition-all duration-300"
+            onClick={toggleTheme}
+          >
             {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" className="hover:bg-white/[0.06]">
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-72 p-0">
+            <SheetContent side="right" className="w-72 p-0 glass-panel">
               <div className="flex flex-col h-full">
-                <div className="flex items-center gap-3 px-5 py-5 border-b border-border bg-muted/30">
-                  <Avatar className="h-10 w-10 ring-2 ring-primary/20">
+                {/* Mobile header */}
+                <div className="flex items-center gap-3 px-5 py-5 border-b border-white/[0.08] bg-gradient-to-r from-primary/5 to-transparent">
+                  <Avatar className="h-10 w-10 ring-2 ring-primary/30">
                     <AvatarImage src={profile?.avatar_url || ""} />
                     <AvatarFallback className="text-sm bg-primary/10 text-primary font-semibold">{profile?.display_name?.[0]?.toUpperCase() || "?"}</AvatarFallback>
                   </Avatar>
@@ -121,11 +146,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     <span className="text-xs text-muted-foreground">Member</span>
                   </div>
                 </div>
+                {/* Mobile links */}
                 <nav className="flex flex-col gap-1 p-4 flex-1">
                   {navLinks(() => setMobileOpen(false))}
                 </nav>
-                <div className="p-4 border-t border-border">
-                  <Button variant="ghost" size="sm" onClick={signOut} className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground">
+                <div className="p-4 border-t border-white/[0.08]">
+                  <Button variant="ghost" size="sm" onClick={signOut} className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground hover:bg-white/[0.06]">
                     <LogOut className="h-4 w-4" /> Sign out
                   </Button>
                 </div>
@@ -134,7 +160,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </Sheet>
         </div>
       </header>
-      <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto w-full">{children}</main>
+
+      {/* ── Main Content ───────────────────────────────────── */}
+      <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-[1800px] mx-auto w-full relative z-10">{children}</main>
       <CompareDrawer />
       <CompareTray />
     </div>

@@ -487,19 +487,21 @@ export default function KvKPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight">KvK Performance</h1>
+        <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight">
+          <span className="text-gradient">KvK Performance</span>
+        </h1>
         <p className="text-sm text-muted-foreground mt-1">
           Track individual war events &amp; compute DKP from snapshot diffs
         </p>
       </div>
 
       {/* DKP Formula badge + weights editor */}
-      <Card className="border-border/60">
+      <Card className="border-white/[0.06] glass-panel">
         <CardContent className="pt-6">
           <div className="flex flex-wrap gap-4 items-center">
             <Collapsible open={weightsOpen} onOpenChange={setWeightsOpen}>
               <CollapsibleTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2 text-muted-foreground">
+                <Button variant="outline" size="sm" className="gap-2 text-muted-foreground border-white/[0.06] hover:bg-white/[0.06]">
                   <Settings2 className="h-4 w-4" />
                   <span className="hidden sm:inline">DKP Formula:</span>
                   <code className="text-xs">
@@ -515,7 +517,7 @@ export default function KvKPage() {
       {/* Formula weights editor (admin only) */}
       <Collapsible open={weightsOpen} onOpenChange={setWeightsOpen}>
         <CollapsibleContent>
-          <Card className="border-border/60">
+          <Card className="border-white/[0.06] glass-panel">
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <Settings2 className="h-4 w-4" /> DKP Formula Weights
@@ -619,7 +621,7 @@ export default function KvKPage() {
           </Button>
         </CollapsibleTrigger>
         <CollapsibleContent className="mt-3 space-y-3">
-          <Card className="border-border/60">
+          <Card className="border-white/[0.06] glass-panel">
             <CardContent className="pt-6 space-y-4">
               {wars.map((w, idx) => (
                 <WarEditor
@@ -672,7 +674,7 @@ export default function KvKPage() {
           </Button>
         </CollapsibleTrigger>
         <CollapsibleContent className="mt-3">
-          <Card className="border-border/60">
+          <Card className="border-white/[0.06] glass-panel">
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <Gauge className="h-4 w-4" /> Minimum Requirements by Power
@@ -828,7 +830,7 @@ export default function KvKPage() {
         <>
           {/* Summary cards */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Card className="card-hover border-border/60 overflow-hidden">
+            <Card className="card-hover stat-glow border-white/[0.06] overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Total DKP
@@ -870,7 +872,7 @@ export default function KvKPage() {
           </div>
 
           {/* Stacked bar chart — one segment per war */}
-          <Card>
+          <Card className="border-white/[0.06] glass-panel">
             <CardHeader>
               <CardTitle>Top 10 by DKP</CardTitle>
             </CardHeader>
@@ -927,11 +929,11 @@ export default function KvKPage() {
                 placeholder="Search name or ID..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 w-full sm:w-64"
+                className="pl-9 w-full sm:w-64 bg-white/[0.04] border-white/[0.06] focus:border-primary/50 transition-colors"
               />
             </div>
             <Select value={alliance} onValueChange={setAlliance}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-40 bg-white/[0.04] border-white/[0.06]">
                 <SelectValue placeholder="Alliance" />
               </SelectTrigger>
               <SelectContent>
@@ -943,19 +945,19 @@ export default function KvKPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Button variant="outline" size="sm" className="gap-2 ml-auto" onClick={downloadCSV}>
+            <Button variant="outline" size="sm" className="gap-2 ml-auto border-white/[0.06] hover:bg-white/[0.06]" onClick={downloadCSV}>
               <Download className="h-4 w-4" />
               Download CSV
             </Button>
           </div>
 
           {/* Table */}
-          <Card className="border-border/60 overflow-hidden">
+          <Card className="border-white/[0.06] overflow-hidden glass-panel">
             <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-muted/50 hover:bg-muted/50 border-b border-border">
+                    <TableRow className="bg-white/[0.02] hover:bg-white/[0.02] border-b border-white/[0.06]">
                       <TableHead className="w-10">#</TableHead>
                       {sortableHead("Governor", "governor_name")}
                       <TableHead>Alliance</TableHead>
@@ -991,7 +993,7 @@ export default function KvKPage() {
                       return (
                         <TableRow
                           key={g.governor_name}
-                          className="hover:bg-muted/30 transition-colors even:bg-muted/10"
+                          className="hover:bg-white/[0.03] transition-colors duration-200 even:bg-white/[0.015]"
                         >
                           <TableCell className="text-muted-foreground text-xs">{i + 1}</TableCell>
                           <TableCell>
@@ -1088,7 +1090,7 @@ export default function KvKPage() {
                   </TableBody>
                   {/* Per-war totals footer */}
                   <TableFooter>
-                    <TableRow className="bg-muted/60 font-semibold">
+                    <TableRow className="bg-white/[0.03] font-semibold">
                       <TableCell />
                       <TableCell className="text-xs uppercase tracking-wider text-muted-foreground">
                         Totals
@@ -1181,7 +1183,7 @@ function WarEditor({
   onMove,
 }: WarEditorProps) {
   return (
-    <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center p-3 rounded-lg bg-muted/30 border border-border/40">
+    <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center p-3 rounded-lg bg-white/[0.02] border border-white/[0.06]">
       {/* Color dot + reorder controls */}
       <div className="flex items-center gap-2">
         <span

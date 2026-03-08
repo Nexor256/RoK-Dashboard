@@ -129,15 +129,18 @@ export default function ManageUsersPage() {
   return (
     <div className="space-y-6 max-w-5xl">
       <div>
-        <h1 className="font-display text-3xl font-bold text-primary flex items-center gap-2">
-          <Shield className="h-7 w-7" /> Manage Users
+        <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight flex items-center gap-2.5">
+          <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center">
+            <Shield className="h-5 w-5 text-primary" />
+          </div>
+          <span className="text-gradient">Manage Users</span>
         </h1>
-        <p className="text-muted-foreground mt-1">Create and manage player accounts</p>
+        <p className="text-sm text-muted-foreground mt-1">Create and manage player accounts</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Create user form */}
-        <Card>
+        <Card className="border-white/[0.06] glass-panel">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <UserPlus className="h-5 w-5" /> Create Player Account
@@ -194,7 +197,7 @@ export default function ManageUsersPage() {
         </Card>
 
         {/* Player list */}
-        <Card>
+        <Card className="border-white/[0.06] glass-panel">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5" /> Players ({profiles.length})

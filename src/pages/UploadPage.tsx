@@ -170,13 +170,15 @@ export default function UploadPage() {
   return (
     <div className="space-y-6 max-w-5xl">
       <div>
-        <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight">Upload Data</h1>
+        <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight">
+          <span className="text-gradient">Upload Data</span>
+        </h1>
         <p className="text-sm text-muted-foreground mt-1">Import governor data from CSV spreadsheets</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Upload form */}
-        <Card>
+        <Card className="border-white/[0.06] glass-panel">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Upload className="h-5 w-5" /> CSV Upload
@@ -203,7 +205,7 @@ export default function UploadPage() {
 
             <div className="space-y-2">
               <Label>CSV File</Label>
-              <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
+              <div className="border-2 border-dashed border-white/[0.08] rounded-xl p-6 text-center hover:border-primary/40 transition-all duration-300 hover:bg-white/[0.02]">
                 <input
                   type="file"
                   accept=".csv"
@@ -259,7 +261,7 @@ export default function UploadPage() {
         </Card>
 
         {/* Expected format */}
-        <Card>
+        <Card className="border-white/[0.06] glass-panel">
           <CardHeader>
             <CardTitle>Expected CSV Format</CardTitle>
             <CardDescription>
@@ -283,7 +285,7 @@ export default function UploadPage() {
 
       {/* Preview table */}
       {parsedData.length > 0 && (
-        <Card>
+        <Card className="border-white/[0.06] glass-panel">
           <CardHeader>
             <CardTitle>Data Preview</CardTitle>
           </CardHeader>

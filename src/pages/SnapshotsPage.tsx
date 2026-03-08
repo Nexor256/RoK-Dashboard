@@ -78,7 +78,7 @@ export default function SnapshotsPage() {
   if (!snapshots?.length) {
     return (
       <div className="space-y-4">
-        <h1 className="font-display text-3xl font-bold">Historical Snapshots</h1>
+        <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight"><span className="text-gradient">Historical Snapshots</span></h1>
         <p className="text-muted-foreground">No snapshots yet. Upload governor data to start comparing.</p>
       </div>
     );
@@ -87,7 +87,7 @@ export default function SnapshotsPage() {
   if (snapshots.length < 2) {
     return (
       <div className="space-y-4">
-        <h1 className="font-display text-3xl font-bold">Historical Snapshots</h1>
+        <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight"><span className="text-gradient">Historical Snapshots</span></h1>
         <p className="text-muted-foreground">Upload at least two snapshots to compare them.</p>
       </div>
     );
@@ -96,11 +96,13 @@ export default function SnapshotsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight">Historical Snapshots</h1>
+        <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight">
+          <span className="text-gradient">Historical Snapshots</span>
+        </h1>
         <p className="text-sm text-muted-foreground mt-1">Compare governor data across different snapshots</p>
       </div>
 
-      <Card className="border-border/60">
+      <Card className="border-white/[0.06] glass-panel">
         <CardHeader>
           <CardTitle className="font-display text-lg">Compare Snapshots</CardTitle>
         </CardHeader>
@@ -109,7 +111,7 @@ export default function SnapshotsPage() {
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <span className="text-sm font-medium text-muted-foreground">From:</span>
               <Select value={resolvedSnapA} onValueChange={setSnapA}>
-                <SelectTrigger className="w-full sm:w-[220px] bg-muted border-border/60">
+                <SelectTrigger className="w-full sm:w-[220px] bg-white/[0.04] border-white/[0.06]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -122,7 +124,7 @@ export default function SnapshotsPage() {
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <span className="text-sm font-medium text-muted-foreground">To:</span>
               <Select value={resolvedSnapB} onValueChange={setSnapB}>
-                <SelectTrigger className="w-full sm:w-[220px] bg-muted border-border/60">
+                <SelectTrigger className="w-full sm:w-[220px] bg-white/[0.04] border-white/[0.06]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -139,10 +141,10 @@ export default function SnapshotsPage() {
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <div className="rounded-lg border border-border/60 overflow-x-auto">
+            <div className="rounded-lg border border-white/[0.06] overflow-x-auto">
               <Table className="min-w-[800px]">
                 <TableHeader>
-                  <TableRow className="bg-muted/50 hover:bg-muted/50 border-b border-border">
+                  <TableRow className="bg-white/[0.02] hover:bg-white/[0.02] border-b border-white/[0.06]">
                     <TableHead>Governor</TableHead>
                     <TableHead>Alliance</TableHead>
                     <TableHead>Power (From)</TableHead>
@@ -156,7 +158,7 @@ export default function SnapshotsPage() {
                 </TableHeader>
                 <TableBody>
                   {comparison.map((row) => (
-                    <TableRow key={row.id} className="hover:bg-muted/30 transition-colors even:bg-muted/10">
+                    <TableRow key={row.id} className="hover:bg-white/[0.03] transition-colors duration-200 even:bg-white/[0.015]">
                       <TableCell>
                         <ContextMenu>
                           <ContextMenuTrigger asChild>
