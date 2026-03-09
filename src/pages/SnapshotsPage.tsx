@@ -11,6 +11,8 @@ import {
 import GovernorProfileCard from "@/components/GovernorProfileCard";
 import CompareContextMenuContent from "@/components/CompareContextMenuContent";
 import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu";
+import { useAuth } from "@/hooks/useAuth";
+import { Badge } from "@/components/ui/badge";
 import { ArrowUp, ArrowDown, Minus, Loader2 } from "lucide-react";
 
 function Delta({ value }: { value: number }) {
@@ -21,6 +23,7 @@ function Delta({ value }: { value: number }) {
 
 export default function SnapshotsPage() {
   const { data: snapshots, isLoading: snapsLoading } = useSnapshots("general");
+  const { governorId } = useAuth();
 
   const [snapA, setSnapA] = useState<string>("");
   const [snapB, setSnapB] = useState<string>("");
@@ -157,20 +160,25 @@ export default function SnapshotsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {comparison.map((row) => (
-                    <TableRow key={row.id} className="hover:bg-white/[0.03] transition-colors duration-200 even:bg-white/[0.015]">
+                  {comparison.map((row) => {
+                    const isMe = !!governorId && row.governor_id === governorId;
+                    return (
+                    <TableRow key={row.id} className={isMe ? "hover:bg-primary/10 transition-colors duration-200 border-l-2 border-l-primary bg-primary/5" : "hover:bg-white/[0.03] transition-colors duration-200 even:bg-white/[0.015]"}>
                       <TableCell>
-                        <ContextMenu>
-                          <ContextMenuTrigger asChild>
-                            <button
-                              onClick={() => setSelectedGov(row)}
-                              className="font-semibold text-primary hover:underline cursor-pointer text-left text-sm"
-                            >
-                              {row.governor_name}
-                            </button>
-                          </ContextMenuTrigger>
-                          <CompareContextMenuContent gov={row} onViewProfile={() => setSelectedGov(row)} />
-                        </ContextMenu>
+                        <div className="flex items-center gap-1.5">
+                          <ContextMenu>
+                            <ContextMenuTrigger asChild>
+                              <button
+                                onClick={() => setSelectedGov(row)}
+                                className="font-semibold text-primary hover:underline cursor-pointer text-left text-sm"
+                              >
+                                {row.governor_name}
+                              </button>
+                            </ContextMenuTrigger>
+                            <CompareContextMenuContent gov={row} onViewProfile={() => setSelectedGov(row)} />
+                          </ContextMenu>
+                          {isMe && <Badge className="text-[10px] px-1.5 py-0 leading-4">You</Badge>}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <span className="text-muted-foreground text-sm">{row.alliance ?? "—"}</span>
@@ -183,7 +191,8 @@ export default function SnapshotsPage() {
                       <TableCell><Delta value={row.killsDelta} /></TableCell>
                       <TableCell><Delta value={row.kpDelta} /></TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
                   {!comparison.length && (
                     <TableRow>
                       <TableCell colSpan={9} className="text-center text-muted-foreground py-8">

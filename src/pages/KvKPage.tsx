@@ -46,6 +46,7 @@ import {
   type KvKWar,
 } from "@/hooks/useKvKWars";
 import { useAuth } from "@/hooks/useAuth";
+import { Badge } from "@/components/ui/badge";
 import {
   useKvKThresholds,
   useUpdateKvKThresholds,
@@ -197,7 +198,7 @@ export default function KvKPage() {
   const deleteWar = useDeleteKvKWar();
   const { data: tiers = [], isLoading: tiersLoading } = useKvKThresholds();
   const updateTiers = useUpdateKvKThresholds();
-  const { isPrivileged } = useAuth();
+  const { isPrivileged, governorId } = useAuth();
   const { toast } = useToast();
 
   const [search, setSearch] = useState("");
@@ -442,7 +443,7 @@ export default function KvKPage() {
         const wg = g.wars[w.id];
         cells.push(wg?.dkp ?? 0, wg?.kills_gained ?? 0, wg?.deaths_gained ?? 0);
       }
-      const participated = validWars.filter((w) => g.wars[w.id]).length;
+      const participated = validWars.filter((w) => { const wg = g.wars[w.id]; return wg && (wg.dkp !== 0 || wg.kills_gained !== 0 || wg.deaths_gained !== 0); }).length;
       const totalDeaths = Object.values(g.wars).reduce((s, w) => s + w.deaths_gained, 0);
       cells.push(g.totalDkp, totalDeaths, `${participated}/${validWars.length}`);
       return cells;
@@ -1062,30 +1063,34 @@ export default function KvKPage() {
                   </TableHeader>
                   <TableBody>
                     {filtered.map((g, i) => {
-                      const participated = validWars.filter((w) => g.wars[w.id]).length;
+                      const participated = validWars.filter((w) => { const wg = g.wars[w.id]; return wg && (wg.dkp !== 0 || wg.kills_gained !== 0 || wg.deaths_gained !== 0); }).length;
                       const tier = findTier(g.power, tiers);
                       const totalDeaths = Object.values(g.wars).reduce((s, w) => s + w.deaths_gained, 0);
                       const totalKp = Object.values(g.wars).reduce((s, w) => s + w.kp_gained, 0);
                       const kpBelow = tier ? totalKp < tier.min_kp : false;
                       const deathsBelow = tier ? totalDeaths < tier.min_deaths : false;
+                      const isMe = !!governorId && g.governor_id === governorId;
                       return (
                         <TableRow
                           key={g.governor_name}
-                          className="hover:bg-white/[0.03] transition-colors duration-200 even:bg-white/[0.015]"
+                          className={isMe ? "hover:bg-primary/10 transition-colors duration-200 border-l-2 border-l-primary bg-primary/5" : "hover:bg-white/[0.03] transition-colors duration-200 even:bg-white/[0.015]"}
                         >
                           <TableCell className="text-muted-foreground text-xs text-center">{i + 1}</TableCell>
                           <TableCell>
-                            <ContextMenu>
-                              <ContextMenuTrigger asChild>
-                                <button
-                                  onClick={() => setSelectedGov(g)}
-                                  className="font-semibold text-primary hover:underline cursor-pointer text-left text-sm"
-                                >
-                                  {g.governor_name}
-                                </button>
-                              </ContextMenuTrigger>
-                              <CompareContextMenuContent gov={g} onViewProfile={() => setSelectedGov(g)} />
-                            </ContextMenu>
+                            <div className="flex items-center gap-1.5">
+                              <ContextMenu>
+                                <ContextMenuTrigger asChild>
+                                  <button
+                                    onClick={() => setSelectedGov(g)}
+                                    className="font-semibold text-primary hover:underline cursor-pointer text-left text-sm"
+                                  >
+                                    {g.governor_name}
+                                  </button>
+                                </ContextMenuTrigger>
+                                <CompareContextMenuContent gov={g} onViewProfile={() => setSelectedGov(g)} />
+                              </ContextMenu>
+                              {isMe && <Badge className="text-[10px] px-1.5 py-0 leading-4">You</Badge>}
+                            </div>
                           </TableCell>
                           <TableCell className="text-muted-foreground text-sm">
                             {g.alliance ?? "—"}
@@ -1112,13 +1117,26 @@ export default function KvKPage() {
                               </span>
                             ); })()}
                           </TableCell>
-                          <TableCell className="text-sm tabular-nums">
+                          <TableCell className={`text-sm tabular-nums ${kpBelow ? "text-destructive font-bold" : ""}`}>
                             <div className="flex flex-col gap-1">
-                              {(() => { const v = aggStat(g, "kp_gained"); return (
-                                <span className={v > 0 ? "text-sky-400" : "text-muted-foreground"}>
-                                  {v > 0 && "↑ "}{fmt(v)}
-                                </span>
-                              ); })()}
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    {(() => { const v = aggStat(g, "kp_gained"); return (
+                                      <span className={`inline-flex items-center gap-1 ${kpBelow ? "" : v > 0 ? "text-sky-400" : "text-muted-foreground"}`}>
+                                        {kpBelow && <AlertTriangle className="h-3.5 w-3.5" />}
+                                        {v > 0 && "↑ "}{fmt(v)}
+                                      </span>
+                                    ); })()}
+                                  </TooltipTrigger>
+                                  {tier && (
+                                    <TooltipContent>
+                                      <p className="text-xs">Required KP: {fmt(tier.min_kp)}</p>
+                                      <p className="text-xs">Actual: {fmt(totalKp)}</p>
+                                    </TooltipContent>
+                                  )}
+                                </Tooltip>
+                              </TooltipProvider>
                               {tier && tier.min_kp > 0 && (
                                 <TooltipProvider delayDuration={200}>
                                   <Tooltip>
@@ -1203,23 +1221,8 @@ export default function KvKPage() {
                               )}
                             </div>
                           </TableCell>
-                          <TableCell className={`font-bold text-sm tabular-nums ${kpBelow ? "text-destructive" : "text-primary"}`}>
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <span className="inline-flex items-center gap-1">
-                                    {kpBelow && <AlertTriangle className="h-3.5 w-3.5" />}
-                                    {fmt(g.totalDkp)}
-                                  </span>
-                                </TooltipTrigger>
-                                {tier && (
-                                  <TooltipContent>
-                                    <p className="text-xs">Required KP: {fmt(tier.min_kp)}</p>
-                                    <p className="text-xs">Actual KP: {fmt(totalKp)}</p>
-                                  </TooltipContent>
-                                )}
-                              </Tooltip>
-                            </TooltipProvider>
+                          <TableCell className="font-bold text-sm tabular-nums text-primary">
+                            {fmt(g.totalDkp)}
                           </TableCell>
                           <TableCell className="text-center text-xs tabular-nums">
                             <span
