@@ -558,7 +558,11 @@ function KvKTab({ kvkData }: { kvkData: KvKExtras }) {
           (s, w) => s + (w.gains?.deaths_gained ?? 0),
           0,
         );
-        const dkpOk = totalDkp >= tier.min_dkp;
+        const totalKp = wars.reduce(
+          (s, w) => s + (w.gains?.kills_gained ?? 0),
+          0,
+        );
+        const kpOk = totalKp >= tier.min_kp;
         const deathsOk = totalDeaths >= tier.min_deaths;
         return (
           <div className="border-t border-white/[0.06] pt-4 space-y-3">
@@ -569,19 +573,19 @@ function KvKTab({ kvkData }: { kvkData: KvKExtras }) {
               Power Tier Requirements
             </p>
             <p className="text-xs text-muted-foreground">
-              Tier: Power ≥ {fmt(tier.min_power)}
+              Tier: {fmt(tier.min_power)} – {tier.max_power ? fmt(tier.max_power) : "∞"}
             </p>
             <div className="grid grid-cols-2 gap-3">
               <div
-                className={`rounded-xl p-3 border ${dkpOk ? "bg-emerald-500/10 border-emerald-500/20" : "bg-destructive/10 border-destructive/20"}`}
+                className={`rounded-xl p-3 border ${kpOk ? "bg-emerald-500/10 border-emerald-500/20" : "bg-destructive/10 border-destructive/20"}`}
               >
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Min DKP</p>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Min KP</p>
                 <p
-                  className={`font-bold tabular-nums ${dkpOk ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}
+                  className={`font-bold tabular-nums ${kpOk ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}
                 >
-                  {fmt(totalDkp)} / {fmt(tier.min_dkp)}
+                  {fmt(totalKp)} / {fmt(tier.min_kp)}
                 </p>
-                <p className={`text-xs mt-0.5 font-medium ${dkpOk ? "text-emerald-500" : "text-destructive"}`}>{dkpOk ? "✓ Passed" : "✗ Below minimum"}</p>
+                <p className={`text-xs mt-0.5 font-medium ${kpOk ? "text-emerald-500" : "text-destructive"}`}>{kpOk ? "✓ Passed" : "✗ Below minimum"}</p>
               </div>
               <div
                 className={`rounded-xl p-3 border ${deathsOk ? "bg-emerald-500/10 border-emerald-500/20" : "bg-destructive/10 border-destructive/20"}`}

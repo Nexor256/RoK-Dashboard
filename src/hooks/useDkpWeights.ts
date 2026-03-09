@@ -40,13 +40,15 @@ export function useUpdateDkpWeights() {
         .select("id")
         .limit(1)
         .single();
-      if (fetchErr) throw fetchErr;
+      if (fetchErr) throw new Error(fetchErr.message);
 
-      const { error } = await supabase
+      const { data: updated, error } = await supabase
         .from("kingdom_settings" as any)
         .update({ dkp_weights: weights, updated_at: new Date().toISOString() } as any)
-        .eq("id", (existing as any).id);
-      if (error) throw error;
+        .eq("id", (existing as any).id)
+        .select("id") as any;
+      if (error) throw new Error(error.message);
+      if (!updated?.length) throw new Error("Update failed – you may not have permission to save settings.");
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["dkp-weights"] });

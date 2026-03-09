@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useLatestGovernorStats, usePreviousGovernorStats, type GovernorStat } from "@/hooks/useGovernorData";
-import { useKvKThresholds, findTier } from "@/hooks/useKvKThresholds";
+
 import { useUserPreferences, useUpdateUserPreferences, type FilterPreset } from "@/hooks/useUserPreferences";
 import { fmt } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -133,7 +133,7 @@ export default function RankingsPage() {
   const governors = data?.governors ?? [];
   const { data: prevData } = usePreviousGovernorStats();
 
-  const { data: tiers } = useKvKThresholds();
+
   const { governorId } = useAuth();
   const { data: prefs } = useUserPreferences();
   const updatePrefs = useUpdateUserPreferences();
@@ -481,12 +481,7 @@ export default function RankingsPage() {
                     </button>
                   </TableHead>
                 ))}
-                {tiers?.length ? (
-                  <>
-                    <TableHead className="text-xs font-semibold uppercase tracking-wider">Deaths Goal</TableHead>
-                    <TableHead className="text-xs font-semibold uppercase tracking-wider">KP Goal</TableHead>
-                  </>
-                ) : null}
+
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -520,7 +515,7 @@ export default function RankingsPage() {
                     )}
                     {(() => {
                       const prev = g.governor_id ? prevMap.get(g.governor_id) : undefined;
-                      const tier = tiers?.length && g.power ? findTier(g.power, tiers) : null;
+
                       const show = (key: string) => visibleKeys.includes(key);
                       const hm = (key: string, value: number): React.CSSProperties | undefined => {
                         if (!heatmapOn || !HEATMAP_KEYS.has(key)) return undefined;
@@ -590,16 +585,7 @@ export default function RankingsPage() {
                           {show("city_hall_level") && (
                             <TableCell className="text-sm">{g.city_hall_level ?? "—"}</TableCell>
                           )}
-                          {tier && (
-                            <>
-                              <TableCell>
-                                <ProgressBar current={g.deaths ?? 0} goal={tier.min_deaths} label="Deaths" />
-                              </TableCell>
-                              <TableCell>
-                                <ProgressBar current={g.killpoints ?? 0} goal={tier.min_dkp} label="Kill Points" />
-                              </TableCell>
-                            </>
-                          )}
+
                         </>
                       );
                     })()}

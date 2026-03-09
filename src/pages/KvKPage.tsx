@@ -52,6 +52,7 @@ import {
   findTier,
   type PowerTier,
 } from "@/hooks/useKvKThresholds";
+import { useToast } from "@/hooks/use-toast";
 import { fmt } from "@/lib/utils";
 import {
   Tooltip,
@@ -197,6 +198,7 @@ export default function KvKPage() {
   const { data: tiers = [], isLoading: tiersLoading } = useKvKThresholds();
   const updateTiers = useUpdateKvKThresholds();
   const { isPrivileged } = useAuth();
+  const { toast } = useToast();
 
   const [search, setSearch] = useState("");
   const [alliance, setAlliance] = useState("all");
@@ -296,6 +298,21 @@ export default function KvKPage() {
 
     return [...govMap.values()];
   }, [validWars, warGainsMaps, allStats, statsBySnapshot]);
+
+  /* latest GovernorStat per governor from the most recent war's after-snapshot
+     Used to enrich the profile card with full stat fields (t4_kills, t5_kills, etc.) */
+  const latestStatByGov = useMemo(() => {
+    const map = new Map<string, GovernorStat>();
+    // Walk wars in order; later wars overwrite earlier ones → most recent wins
+    for (const w of validWars) {
+      const afterStats = statsBySnapshot.get(w.snapshot_after_id!) ?? [];
+      for (const s of afterStats) {
+        const key = s.governor_id || s.governor_name;
+        map.set(key, s);
+      }
+    }
+    return map;
+  }, [validWars, statsBySnapshot]);
 
   const alliances = useMemo(
     () => [...new Set(kvkRows.map((g) => g.alliance).filter(Boolean))],
@@ -705,74 +722,92 @@ export default function KvKPage() {
                 <Gauge className="h-4 w-4" /> Minimum Requirements by Power
               </CardTitle>
               <p className="text-xs text-muted-foreground">
-                Governors whose total DKP or deaths fall below their tier&apos;s minimum will be flagged in red.
+                Governors whose KP or deaths fall below their tier&apos;s minimum will be flagged in red.
               </p>
             </CardHeader>
             <CardContent>
               {isPrivileged ? (
                 <div className="space-y-3">
                   {(editTiers ?? tiers).map((tier, idx) => (
-                    <div key={idx} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 items-end">
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Min Power</Label>
-                        <Input
-                          type="number"
-                          min="0"
-                          value={tier.min_power}
-                          onChange={(e) => {
-                            const arr = [...(editTiers ?? tiers)];
-                            arr[idx] = { ...arr[idx], min_power: Number(e.target.value) || 0 };
+                    <div key={idx} className="space-y-2 rounded-lg border border-border/40 p-3">
+                      <div className="grid grid-cols-[1fr_1fr_auto] gap-2 items-end">
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">Min Power</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            value={tier.min_power || ""}
+                            onChange={(e) => {
+                              const arr = [...(editTiers ?? tiers)];
+                              arr[idx] = { ...arr[idx], min_power: e.target.value === "" ? 0 : Math.max(0, Math.floor(Number(e.target.value))) };
+                              setEditTiers(arr);
+                            }}
+                            className="h-9 bg-secondary border-border"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">Max Power <span className="text-muted-foreground/60">(0 = no limit)</span></Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            value={tier.max_power || ""}
+                            onChange={(e) => {
+                              const arr = [...(editTiers ?? tiers)];
+                              arr[idx] = { ...arr[idx], max_power: e.target.value === "" ? 0 : Math.max(0, Math.floor(Number(e.target.value))) };
+                              setEditTiers(arr);
+                            }}
+                            className="h-9 bg-secondary border-border"
+                          />
+                        </div>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-9 w-9 text-destructive"
+                          onClick={() => {
+                            const arr = (editTiers ?? [...tiers]).filter((_, j) => j !== idx);
                             setEditTiers(arr);
                           }}
-                          className="h-9 bg-secondary border-border"
-                        />
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Min DKP</Label>
-                        <Input
-                          type="number"
-                          min="0"
-                          value={tier.min_dkp}
-                          onChange={(e) => {
-                            const arr = [...(editTiers ?? tiers)];
-                            arr[idx] = { ...arr[idx], min_dkp: Number(e.target.value) || 0 };
-                            setEditTiers(arr);
-                          }}
-                          className="h-9 bg-secondary border-border"
-                        />
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">Min KP</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            value={tier.min_kp || ""}
+                            onChange={(e) => {
+                              const arr = [...(editTiers ?? tiers)];
+                              arr[idx] = { ...arr[idx], min_kp: e.target.value === "" ? 0 : Math.max(0, Math.floor(Number(e.target.value))) };
+                              setEditTiers(arr);
+                            }}
+                            className="h-9 bg-secondary border-border"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">Min Deaths</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            value={tier.min_deaths || ""}
+                            onChange={(e) => {
+                              const arr = [...(editTiers ?? tiers)];
+                              arr[idx] = { ...arr[idx], min_deaths: e.target.value === "" ? 0 : Math.max(0, Math.floor(Number(e.target.value))) };
+                              setEditTiers(arr);
+                            }}
+                            className="h-9 bg-secondary border-border"
+                          />
+                        </div>
                       </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Min Deaths</Label>
-                        <Input
-                          type="number"
-                          min="0"
-                          value={tier.min_deaths}
-                          onChange={(e) => {
-                            const arr = [...(editTiers ?? tiers)];
-                            arr[idx] = { ...arr[idx], min_deaths: Number(e.target.value) || 0 };
-                            setEditTiers(arr);
-                          }}
-                          className="h-9 bg-secondary border-border"
-                        />
-                      </div>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-9 w-9 text-destructive"
-                        onClick={() => {
-                          const arr = (editTiers ?? [...tiers]).filter((_, j) => j !== idx);
-                          setEditTiers(arr);
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
                     </div>
                   ))}
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => {
-                      setEditTiers([...(editTiers ?? tiers), { min_power: 0, min_dkp: 0, min_deaths: 0 }]);
+                      setEditTiers([...(editTiers ?? tiers), { min_power: 0, max_power: 0, min_kp: 0, min_deaths: 0 }]);
                     }}
                   >
                     <Plus className="h-4 w-4 mr-1" /> Add Tier
@@ -782,10 +817,23 @@ export default function KvKPage() {
                       size="sm"
                       onClick={() => {
                         if (editTiers) {
-                          updateTiers.mutate(editTiers, {
+                          // Validate: filter out all-zero tiers and check for duplicate min_power
+                          const meaningful = editTiers.filter(
+                            (t) => t.min_power > 0 || t.max_power > 0 || t.min_kp > 0 || t.min_deaths > 0,
+                          );
+                          const powers = meaningful.map((t) => t.min_power);
+                          const hasDupes = new Set(powers).size !== powers.length;
+                          if (hasDupes) {
+                            toast({ title: "Duplicate tiers", description: "Each tier must have a unique Min Power value.", variant: "destructive" });
+                            return;
+                          }
+                          updateTiers.mutate(meaningful, {
                             onSuccess: () => {
                               setEditTiers(null);
-                              setThresholdsOpen(false);
+                              toast({ title: "Thresholds saved" });
+                            },
+                            onError: (err) => {
+                              toast({ title: "Failed to save", description: err instanceof Error ? err.message : String(err), variant: "destructive" });
                             },
                           });
                         }
@@ -814,14 +862,14 @@ export default function KvKPage() {
               ) : tiers.length ? (
                 <div className="space-y-2">
                   {tiers.map((tier, idx) => (
-                    <div key={idx} className="grid grid-cols-3 gap-3">
+                    <div key={idx} className="grid grid-cols-4 gap-3">
                       <div className="space-y-1">
-                        <span className="text-xs text-muted-foreground">Min Power</span>
-                        <p className="font-semibold text-foreground">{fmt(tier.min_power)}</p>
+                        <span className="text-xs text-muted-foreground">Power Range</span>
+                        <p className="font-semibold text-foreground">{fmt(tier.min_power)} – {tier.max_power ? fmt(tier.max_power) : "∞"}</p>
                       </div>
                       <div className="space-y-1">
-                        <span className="text-xs text-muted-foreground">Min DKP</span>
-                        <p className="font-semibold text-foreground">{fmt(tier.min_dkp)}</p>
+                        <span className="text-xs text-muted-foreground">Min KP</span>
+                        <p className="font-semibold text-foreground">{fmt(tier.min_kp)}</p>
                       </div>
                       <div className="space-y-1">
                         <span className="text-xs text-muted-foreground">Min Deaths</span>
@@ -1017,14 +1065,15 @@ export default function KvKPage() {
                       const participated = validWars.filter((w) => g.wars[w.id]).length;
                       const tier = findTier(g.power, tiers);
                       const totalDeaths = Object.values(g.wars).reduce((s, w) => s + w.deaths_gained, 0);
-                      const dkpBelow = tier ? g.totalDkp < tier.min_dkp : false;
+                      const totalKp = Object.values(g.wars).reduce((s, w) => s + w.kp_gained, 0);
+                      const kpBelow = tier ? totalKp < tier.min_kp : false;
                       const deathsBelow = tier ? totalDeaths < tier.min_deaths : false;
                       return (
                         <TableRow
                           key={g.governor_name}
                           className="hover:bg-white/[0.03] transition-colors duration-200 even:bg-white/[0.015]"
                         >
-                          <TableCell className="text-muted-foreground text-xs">{i + 1}</TableCell>
+                          <TableCell className="text-muted-foreground text-xs text-center">{i + 1}</TableCell>
                           <TableCell>
                             <ContextMenu>
                               <ContextMenuTrigger asChild>
@@ -1064,11 +1113,32 @@ export default function KvKPage() {
                             ); })()}
                           </TableCell>
                           <TableCell className="text-sm tabular-nums">
-                            {(() => { const v = aggStat(g, "kp_gained"); return (
-                              <span className={v > 0 ? "text-sky-400" : "text-muted-foreground"}>
-                                {v > 0 && "↑ "}{fmt(v)}
-                              </span>
-                            ); })()}
+                            <div className="flex flex-col gap-1">
+                              {(() => { const v = aggStat(g, "kp_gained"); return (
+                                <span className={v > 0 ? "text-sky-400" : "text-muted-foreground"}>
+                                  {v > 0 && "↑ "}{fmt(v)}
+                                </span>
+                              ); })()}
+                              {tier && tier.min_kp > 0 && (
+                                <TooltipProvider delayDuration={200}>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <div className="h-1.5 w-20 rounded-full bg-white/10 overflow-hidden cursor-default">
+                                        <div
+                                          className={`h-full rounded-full transition-all ${kpBelow ? "bg-red-400" : "bg-sky-400"}`}
+                                          style={{ width: `${Math.min((totalKp / tier.min_kp) * 100, 100)}%` }}
+                                        />
+                                      </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="text-xs">
+                                      <p className="font-semibold mb-0.5">KP Goal</p>
+                                      <p>{fmt(totalKp)} / {fmt(tier.min_kp)}</p>
+                                      <p className={kpBelow ? "text-red-400" : "text-emerald-400"}>{kpBelow ? "✗ Below minimum" : "✓ Met"}</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
+                            </div>
                           </TableCell>
                           {/* Per-war DKP columns */}
                           {validWars.map((w, wi) => {
@@ -1095,36 +1165,57 @@ export default function KvKPage() {
                             );
                           })}
                           <TableCell className={`text-sm tabular-nums border-l border-border/40 ${deathsBelow ? "text-destructive font-bold" : "text-muted-foreground"}`}>
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <span className="inline-flex items-center gap-1">
-                                    {deathsBelow && <AlertTriangle className="h-3.5 w-3.5" />}
-                                    {fmt(totalDeaths)}
-                                  </span>
-                                </TooltipTrigger>
-                                {tier && (
-                                  <TooltipContent>
-                                    <p className="text-xs">Required Deaths: {fmt(tier.min_deaths)}</p>
-                                    <p className="text-xs">Actual: {fmt(totalDeaths)}</p>
-                                  </TooltipContent>
-                                )}
-                              </Tooltip>
-                            </TooltipProvider>
+                            <div className="flex flex-col gap-1">
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className="inline-flex items-center gap-1">
+                                      {deathsBelow && <AlertTriangle className="h-3.5 w-3.5" />}
+                                      {fmt(totalDeaths)}
+                                    </span>
+                                  </TooltipTrigger>
+                                  {tier && (
+                                    <TooltipContent>
+                                      <p className="text-xs">Required Deaths: {fmt(tier.min_deaths)}</p>
+                                      <p className="text-xs">Actual: {fmt(totalDeaths)}</p>
+                                    </TooltipContent>
+                                  )}
+                                </Tooltip>
+                              </TooltipProvider>
+                              {tier && tier.min_deaths > 0 && (
+                                <TooltipProvider delayDuration={200}>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <div className="h-1.5 w-20 rounded-full bg-white/10 overflow-hidden cursor-default">
+                                        <div
+                                          className={`h-full rounded-full transition-all ${deathsBelow ? "bg-red-400" : "bg-emerald-400"}`}
+                                          style={{ width: `${Math.min((totalDeaths / tier.min_deaths) * 100, 100)}%` }}
+                                        />
+                                      </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="text-xs">
+                                      <p className="font-semibold mb-0.5">Deaths Goal</p>
+                                      <p>{fmt(totalDeaths)} / {fmt(tier.min_deaths)}</p>
+                                      <p className={deathsBelow ? "text-red-400" : "text-emerald-400"}>{deathsBelow ? "✗ Below minimum" : "✓ Met"}</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
+                            </div>
                           </TableCell>
-                          <TableCell className={`font-bold text-sm tabular-nums ${dkpBelow ? "text-destructive" : "text-primary"}`}>
+                          <TableCell className={`font-bold text-sm tabular-nums ${kpBelow ? "text-destructive" : "text-primary"}`}>
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <span className="inline-flex items-center gap-1">
-                                    {dkpBelow && <AlertTriangle className="h-3.5 w-3.5" />}
+                                    {kpBelow && <AlertTriangle className="h-3.5 w-3.5" />}
                                     {fmt(g.totalDkp)}
                                   </span>
                                 </TooltipTrigger>
                                 {tier && (
                                   <TooltipContent>
-                                    <p className="text-xs">Required DKP: {fmt(tier.min_dkp)}</p>
-                                    <p className="text-xs">Actual: {fmt(g.totalDkp)}</p>
+                                    <p className="text-xs">Required KP: {fmt(tier.min_kp)}</p>
+                                    <p className="text-xs">Actual KP: {fmt(totalKp)}</p>
                                   </TooltipContent>
                                 )}
                               </Tooltip>
@@ -1201,12 +1292,21 @@ export default function KvKPage() {
           </Card>
 
           {/* Governor profile popup */}
-          <GovernorProfileCard
-            governor={selectedGov}
-            onClose={() => setSelectedGov(null)}
-            kvkData={
-              selectedGov
-                ? {
+          {(() => {
+            if (!selectedGov) return null;
+            const govKey = selectedGov.governor_id || selectedGov.governor_name;
+            // Prefer the full GovernorStat (has t4_kills, t5_kills, etc.) over the lean KvKRow
+            const richStat = latestStatByGov.get(govKey);
+            const profileGov = richStat ?? selectedGov;
+            const latestStats = validWars.length
+              ? statsBySnapshot.get(validWars[validWars.length - 1].snapshot_after_id!) ?? []
+              : [];
+            return (
+              <GovernorProfileCard
+                governor={profileGov}
+                allGovernors={latestStats}
+                onClose={() => setSelectedGov(null)}
+                kvkData={{
                   wars: validWars.map((w, i) => ({
                     id: w.id,
                     name: w.name,
@@ -1216,10 +1316,10 @@ export default function KvKPage() {
                   totalDkp: selectedGov.totalDkp,
                   tiers,
                   power: selectedGov.power,
-                }
-                : undefined
-            }
-          />
+                }}
+              />
+            );
+          })()}
         </>
       )}
     </div>
