@@ -655,6 +655,7 @@ export default function KvKPage() {
       </Collapsible>
 
       {/* ─── War Management ──────────────────────────────────── */}
+      {isPrivileged && (
       <Collapsible open={warsOpen} onOpenChange={setWarsOpen}>
         <CollapsibleTrigger asChild>
           <Button variant="outline" className="gap-2">
@@ -706,6 +707,7 @@ export default function KvKPage() {
           </Card>
         </CollapsibleContent>
       </Collapsible>
+      )}
 
       {/* ─── Power Tier Thresholds ─────────────────────────────── */}
       <Collapsible open={thresholdsOpen} onOpenChange={setThresholdsOpen}>

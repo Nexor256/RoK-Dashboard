@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, TableProperties, BarChart3, History, Crown, Swords, Upload, LogOut, Shield, Moon, Sun, Menu } from "lucide-react";
+import { LayoutDashboard, TableProperties, BarChart3, History, Crown, Swords, Upload, LogOut, Shield, Moon, Sun, Menu, KeyRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { CompareProvider } from "@/hooks/useCompare";
 import CompareDrawer, { CompareTray } from "@/components/CompareDrawer";
 import CommandPalette from "@/components/CommandPalette";
+import ChangePasswordDialog from "@/components/ChangePasswordDialog";
 
 const navItems = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -107,6 +108,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 {profile?.display_name || "Admin"}
               </span>
             </div>
+            <ChangePasswordDialog
+              trigger={
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-white/[0.06] transition-all duration-300"
+                >
+                  <KeyRound className="h-4 w-4" />
+                </Button>
+              }
+            />
             <Button
               variant="ghost"
               size="icon"
@@ -151,7 +163,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <nav className="flex flex-col gap-1 p-4 flex-1">
                   {navLinks(() => setMobileOpen(false))}
                 </nav>
-                <div className="p-4 border-t border-white/[0.08]">
+                <div className="p-4 border-t border-white/[0.08] space-y-1">
+                  <ChangePasswordDialog
+                    trigger={
+                      <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground hover:bg-white/[0.06]">
+                        <KeyRound className="h-4 w-4" /> Change Password
+                      </Button>
+                    }
+                  />
                   <Button variant="ghost" size="sm" onClick={signOut} className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground hover:bg-white/[0.06]">
                     <LogOut className="h-4 w-4" /> Sign out
                   </Button>

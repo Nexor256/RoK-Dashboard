@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UserPlus, Loader2, Users, Shield } from "lucide-react";
+import { UserPlus, Loader2, Users, Shield, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -18,6 +18,7 @@ interface Profile {
   user_id: string;
   display_name: string;
   avatar_url: string | null;
+  password_plain: string | null;
   created_at: string;
 }
 
@@ -34,6 +35,16 @@ export default function ManageUsersPage() {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [selectedRole, setSelectedRole] = useState<"user" | "r4">("user");
   const [creating, setCreating] = useState(false);
+  const [visiblePasswords, setVisiblePasswords] = useState<Set<string>>(new Set());
+
+  const togglePasswordVisibility = (userId: string) => {
+    setVisiblePasswords((prev) => {
+      const next = new Set(prev);
+      if (next.has(userId)) next.delete(userId);
+      else next.add(userId);
+      return next;
+    });
+  };
   const { toast } = useToast();
   const { session } = useAuth();
   const queryClient = useQueryClient();
@@ -215,6 +226,7 @@ export default function ManageUsersPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Player</TableHead>
+                    <TableHead>Password</TableHead>
                     <TableHead>Role</TableHead>
                     <TableHead>Joined</TableHead>
                   </TableRow>
@@ -229,6 +241,20 @@ export default function ManageUsersPage() {
                             <AvatarFallback>{p.display_name[0]?.toUpperCase()}</AvatarFallback>
                           </Avatar>
                           <span className="font-medium">{p.display_name}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono text-xs text-muted-foreground">
+                            {visiblePasswords.has(p.user_id) ? (p.password_plain || "—") : "••••••"}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => togglePasswordVisibility(p.user_id)}
+                            className="text-muted-foreground hover:text-foreground transition-colors"
+                          >
+                            {visiblePasswords.has(p.user_id) ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                          </button>
                         </div>
                       </TableCell>
                       <TableCell>{getRoleBadge(p.user_id)}</TableCell>

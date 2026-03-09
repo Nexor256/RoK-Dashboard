@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Verify the caller is an admin
+    // Authenticate caller
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "No valid Authorization header provided" }), {
@@ -37,62 +37,38 @@ Deno.serve(async (req) => {
 
     const callerId = userData.user.id;
 
-    // Check admin role
+    const { new_password } = await req.json();
+
+    if (!new_password || new_password.length < 6) {
+      return new Response(
+        JSON.stringify({ error: "Password must be at least 6 characters" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Use service-role client for admin operations
     const adminClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { data: roleData } = await adminClient
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", callerId)
-      .eq("role", "admin")
-      .maybeSingle();
-
-    if (!roleData) {
-      return new Response(JSON.stringify({ error: "Admin access required" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const { governor_id, password, display_name, avatar_url, role } = await req.json();
-
-    if (!governor_id || !password || !display_name) {
-      return new Response(
-        JSON.stringify({ error: "governor_id, password, and display_name are required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Build synthetic email from governor ID
-    const email = `${governor_id}@rok.local`;
-
-    // Validate role — only 'user' or 'r4' allowed via this endpoint
-    const assignedRole = role === "r4" ? "r4" : "user";
-
-    // Create user with admin API
-    const { data: newUserData, error: createError } = await adminClient.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
+    // Update Supabase Auth password
+    const { error: authUpdateError } = await adminClient.auth.admin.updateUserById(callerId, {
+      password: new_password,
     });
 
-    if (createError) {
-      return new Response(JSON.stringify({ error: createError.message }), {
+    if (authUpdateError) {
+      return new Response(JSON.stringify({ error: authUpdateError.message }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Create profile (upsert — the auto-profile trigger may have already created one)
-    const { error: profileError } = await adminClient.from("profiles").upsert({
-      user_id: newUserData.user.id,
-      display_name,
-      avatar_url: avatar_url || null,
-      password_plain: password,
-    }, { onConflict: "user_id" });
+    // Update plain-text copy in profiles
+    const { error: profileError } = await adminClient
+      .from("profiles")
+      .update({ password_plain: new_password })
+      .eq("user_id", callerId);
 
     if (profileError) {
       return new Response(JSON.stringify({ error: profileError.message }), {
@@ -101,21 +77,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Assign role
-    const { error: roleError } = await adminClient.from("user_roles").insert({
-      user_id: newUserData.user.id,
-      role: assignedRole,
-    });
-
-    if (roleError) {
-      return new Response(JSON.stringify({ error: roleError.message }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     return new Response(
-      JSON.stringify({ success: true, user_id: newUserData.user.id }),
+      JSON.stringify({ success: true }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
