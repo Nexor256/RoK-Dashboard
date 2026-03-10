@@ -1041,6 +1041,7 @@ export default function KvKPage() {
                       {sortableHead("T5 Kills", "agg_t5")}
                       {sortableHead("T4 Kills", "agg_t4")}
                       {sortableHead("KP \u0394", "agg_kp")}
+                      {sortableHead("Total Deaths", "totalDeaths")}
                       {validWars.map((w, i) => (
                         <TableHead
                           key={w.id}
@@ -1058,8 +1059,7 @@ export default function KvKPage() {
                           </span>
                         </TableHead>
                       ))}
-                      {sortableHead("Total Deaths", "totalDeaths", "border-l border-border/40")}
-                      {sortableHead("Total DKP", "totalDkp")}
+                      {sortableHead("Total DKP", "totalDkp", "border-l border-border/40")}
                       <TableHead className="text-center">Wars</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -1186,31 +1186,7 @@ export default function KvKPage() {
                               )}
                             </div>
                           </TableCell>
-                          {/* Per-war DKP columns */}
-                          {validWars.map((w, wi) => {
-                            const wg = g.wars[w.id];
-                            return (
-                              <TableCell
-                                key={w.id}
-                                className="text-center border-l border-border/40 text-sm tabular-nums"
-                                style={{ backgroundColor: warBgColor(wi) }}
-                              >
-                                {wg ? (
-                                  <div>
-                                    <span className="font-semibold" style={{ color: warColor(wi) }}>
-                                      {fmt(wg.dkp)}
-                                    </span>
-                                    <div className="text-[10px] text-muted-foreground leading-tight mt-0.5">
-                                      K: {fmt(wg.kills_gained)} · D: {fmt(wg.deaths_gained)}
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <span className="text-muted-foreground/50">—</span>
-                                )}
-                              </TableCell>
-                            );
-                          })}
-                          <TableCell className={`text-sm tabular-nums border-l border-border/40 ${deathsBelow ? "text-destructive font-bold" : "text-muted-foreground"}`}>
+                          <TableCell className={`text-sm tabular-nums ${deathsBelow ? "text-destructive font-bold" : "text-muted-foreground"}`}>
                             <div className="flex flex-col gap-1">
                               <TooltipProvider>
                                 <Tooltip>
@@ -1255,7 +1231,31 @@ export default function KvKPage() {
                               )}
                             </div>
                           </TableCell>
-                          <TableCell className="font-bold text-sm tabular-nums text-primary">
+                          {/* Per-war DKP columns */}
+                          {validWars.map((w, wi) => {
+                            const wg = g.wars[w.id];
+                            return (
+                              <TableCell
+                                key={w.id}
+                                className="text-center border-l border-border/40 text-sm tabular-nums"
+                                style={{ backgroundColor: warBgColor(wi) }}
+                              >
+                                {wg ? (
+                                  <div>
+                                    <span className="font-semibold" style={{ color: warColor(wi) }}>
+                                      {fmt(wg.dkp)}
+                                    </span>
+                                    <div className="text-[10px] text-muted-foreground leading-tight mt-0.5">
+                                      K: {fmt(wg.kills_gained)} · D: {fmt(wg.deaths_gained)}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <span className="text-muted-foreground/50">—</span>
+                                )}
+                              </TableCell>
+                            );
+                          })}
+                          <TableCell className="font-bold text-sm tabular-nums text-primary border-l border-border/40">
                             {fmt(g.totalDkp)}
                           </TableCell>
                           <TableCell className="text-center text-xs tabular-nums">
@@ -1295,6 +1295,9 @@ export default function KvKPage() {
                       <TableCell className="text-sm tabular-nums text-sky-400">
                         {fmt(filtered.reduce((s, g) => s + aggStat(g, "kp_gained"), 0))}
                       </TableCell>
+                      <TableCell className="text-sm tabular-nums text-muted-foreground">
+                        {fmt(filtered.reduce((s, g) => s + Object.values(g.wars).reduce((ws, w) => ws + w.deaths_gained, 0), 0))}
+                      </TableCell>
                       {validWars.map((w, wi) => {
                         const wt = warTotals[w.id];
                         return (
@@ -1314,10 +1317,7 @@ export default function KvKPage() {
                           </TableCell>
                         );
                       })}
-                      <TableCell className="text-sm tabular-nums text-muted-foreground border-l border-border/40">
-                        {fmt(filtered.reduce((s, g) => s + Object.values(g.wars).reduce((ws, w) => ws + w.deaths_gained, 0), 0))}
-                      </TableCell>
-                      <TableCell className="font-bold text-primary text-sm tabular-nums">
+                      <TableCell className="font-bold text-primary text-sm tabular-nums border-l border-border/40">
                         {fmt(filtered.reduce((s, g) => s + g.totalDkp, 0))}
                       </TableCell>
                       <TableCell />
