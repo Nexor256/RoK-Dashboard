@@ -114,7 +114,7 @@ export function useGovernorHistory(governorId: string | null) {
     queryKey: ["governor_history", governorId],
     queryFn: async () => {
       if (!governorId) return [];
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("governor_stats")
         .select("*, snapshots!inner(snapshot_date, label, snapshot_type)")
         .eq("governor_id", governorId)
