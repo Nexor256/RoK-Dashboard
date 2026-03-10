@@ -1072,6 +1072,8 @@ export default function KvKPage() {
                       const kpBelow = tier ? totalKp < tier.min_kp : false;
                       const deathsBelow = tier ? totalDeaths < tier.min_deaths : false;
                       const isMe = !!governorId && g.governor_id === governorId;
+                      const govKey = g.governor_id || g.governor_name;
+                      const latestStat = latestStatByGov.get(govKey);
                       return (
                         <TableRow
                           key={g.governor_name}
@@ -1100,23 +1102,41 @@ export default function KvKPage() {
                           {/* Aggregated stat columns */}
                           <TableCell className="text-sm tabular-nums">
                             {(() => { const v = aggStat(g, "power_gained"); return (
-                              <span className={v >= 0 ? "text-emerald-500" : "text-red-400"}>
-                                {v > 0 ? "↑ " : v < 0 ? "↓ " : ""}{fmt(v)}
-                              </span>
+                              <div className="flex flex-col gap-0.5">
+                                <span className={`font-semibold ${v >= 0 ? "text-emerald-500" : "text-red-400"}`}>
+                                  {v > 0 ? "↑ " : v < 0 ? "↓ " : ""}{fmt(v)}
+                                </span>
+                                <div className="h-[2px] w-full rounded-full overflow-hidden" style={{ background: `linear-gradient(90deg, ${v >= 0 ? 'rgb(16 185 129 / 0.45)' : 'rgb(248 113 113 / 0.45)'} 0%, transparent 100%)` }} />
+                                <span className="text-[11px] text-muted-foreground/70">
+                                  {fmt(latestStat?.power ?? 0)}
+                                </span>
+                              </div>
                             ); })()}
                           </TableCell>
                           <TableCell className="text-sm tabular-nums">
                             {(() => { const v = aggStat(g, "t5_gained"); return (
-                              <span className={v > 0 ? "text-violet-400" : "text-muted-foreground"}>
-                                {v > 0 && "↑ "}{fmt(v)}
-                              </span>
+                              <div className="flex flex-col gap-0.5">
+                                <span className={`font-semibold ${v > 0 ? "text-violet-400" : "text-muted-foreground"}`}>
+                                  {v > 0 && "↑ "}{fmt(v)}
+                                </span>
+                                <div className="h-[2px] w-full rounded-full overflow-hidden" style={{ background: `linear-gradient(90deg, ${v > 0 ? 'rgb(167 139 250 / 0.45)' : 'rgb(100 100 100 / 0.15)'} 0%, transparent 100%)` }} />
+                                <span className="text-[11px] text-muted-foreground/70">
+                                  {fmt(latestStat?.t5_kills ?? 0)}
+                                </span>
+                              </div>
                             ); })()}
                           </TableCell>
                           <TableCell className="text-sm tabular-nums">
                             {(() => { const v = aggStat(g, "t4_gained"); return (
-                              <span className={v > 0 ? "text-indigo-400" : "text-muted-foreground"}>
-                                {v > 0 && "↑ "}{fmt(v)}
-                              </span>
+                              <div className="flex flex-col gap-0.5">
+                                <span className={`font-semibold ${v > 0 ? "text-indigo-400" : "text-muted-foreground"}`}>
+                                  {v > 0 && "↑ "}{fmt(v)}
+                                </span>
+                                <div className="h-[2px] w-full rounded-full overflow-hidden" style={{ background: `linear-gradient(90deg, ${v > 0 ? 'rgb(129 140 248 / 0.45)' : 'rgb(100 100 100 / 0.15)'} 0%, transparent 100%)` }} />
+                                <span className="text-[11px] text-muted-foreground/70">
+                                  {fmt(latestStat?.t4_kills ?? 0)}
+                                </span>
+                              </div>
                             ); })()}
                           </TableCell>
                           <TableCell className={`text-sm tabular-nums ${kpBelow ? "text-destructive font-bold" : ""}`}>
@@ -1125,10 +1145,16 @@ export default function KvKPage() {
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     {(() => { const v = aggStat(g, "kp_gained"); return (
-                                      <span className={`inline-flex items-center gap-1 ${kpBelow ? "" : v > 0 ? "text-sky-400" : "text-muted-foreground"}`}>
-                                        {kpBelow && <AlertTriangle className="h-3.5 w-3.5" />}
-                                        {v > 0 && "↑ "}{fmt(v)}
-                                      </span>
+                                      <div className="flex flex-col gap-0.5">
+                                        <span className={`inline-flex items-center gap-1 font-semibold ${kpBelow ? "" : v > 0 ? "text-sky-400" : "text-muted-foreground"}`}>
+                                          {kpBelow && <AlertTriangle className="h-3.5 w-3.5" />}
+                                          {v > 0 && "↑ "}{fmt(v)}
+                                        </span>
+                                        <div className="h-[2px] w-full rounded-full overflow-hidden" style={{ background: `linear-gradient(90deg, ${kpBelow ? 'rgb(248 113 113 / 0.45)' : v > 0 ? 'rgb(56 189 248 / 0.45)' : 'rgb(100 100 100 / 0.15)'} 0%, transparent 100%)` }} />
+                                        <span className="text-[11px] text-muted-foreground/70">
+                                          {fmt(latestStat?.killpoints ?? 0)}
+                                        </span>
+                                      </div>
                                     ); })()}
                                   </TooltipTrigger>
                                   {tier && (
@@ -1189,10 +1215,16 @@ export default function KvKPage() {
                               <TooltipProvider>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <span className="inline-flex items-center gap-1">
-                                      {deathsBelow && <AlertTriangle className="h-3.5 w-3.5" />}
-                                      {fmt(totalDeaths)}
-                                    </span>
+                                    <div className="flex flex-col gap-0.5">
+                                      <span className="inline-flex items-center gap-1 font-semibold">
+                                        {deathsBelow && <AlertTriangle className="h-3.5 w-3.5" />}
+                                        {fmt(totalDeaths)}
+                                      </span>
+                                      <div className="h-[2px] w-full rounded-full overflow-hidden" style={{ background: `linear-gradient(90deg, ${deathsBelow ? 'rgb(248 113 113 / 0.45)' : 'rgb(100 100 100 / 0.2)'} 0%, transparent 100%)` }} />
+                                      <span className="text-[11px] text-muted-foreground/70">
+                                        {fmt(latestStat?.deaths ?? 0)}
+                                      </span>
+                                    </div>
                                   </TooltipTrigger>
                                   {tier && (
                                     <TooltipContent>
