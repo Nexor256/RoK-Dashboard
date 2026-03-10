@@ -16,9 +16,9 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowUp, ArrowDown, Minus, Loader2 } from "lucide-react";
 
 function Delta({ value }: { value: number }) {
-  if (value > 0) return <span className="text-success flex items-center gap-1"><ArrowUp className="h-3 w-3" />+{fmt(value)}</span>;
-  if (value < 0) return <span className="text-danger flex items-center gap-1"><ArrowDown className="h-3 w-3" />{fmt(value)}</span>;
-  return <span className="text-muted-foreground flex items-center gap-1"><Minus className="h-3 w-3" />0</span>;
+  if (value > 0) return <span className="text-emerald-500 font-semibold flex items-center gap-1 tabular-nums"><ArrowUp className="h-3 w-3" />+{fmt(value)}</span>;
+  if (value < 0) return <span className="text-red-400 font-semibold flex items-center gap-1 tabular-nums"><ArrowDown className="h-3 w-3" />{fmt(value)}</span>;
+  return <span className="text-muted-foreground flex items-center gap-1 tabular-nums"><Minus className="h-3 w-3" />0</span>;
 }
 
 export default function SnapshotsPage() {

@@ -14,12 +14,12 @@ import { fmt } from "@/lib/utils";
 import GovernorProfileCard from "@/components/GovernorProfileCard";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const statConfig: Record<string, { icon: typeof Users; gradient: string; iconColor: string; iconBg: string; sortKey?: string }> = {
-  "Total Governors": { icon: Users, gradient: "from-blue-500/15 via-blue-600/5 to-transparent", iconColor: "text-blue-400", iconBg: "bg-blue-500/10" },
-  "Total Power": { icon: TrendingUp, gradient: "from-violet-500/15 via-violet-600/5 to-transparent", iconColor: "text-violet-400", iconBg: "bg-violet-500/10", sortKey: "power" },
-  "Total Kills": { icon: Crown, gradient: "from-emerald-500/15 via-emerald-600/5 to-transparent", iconColor: "text-emerald-400", iconBg: "bg-emerald-500/10", sortKey: "total_kills" },
-  "Total Kill Points": { icon: Swords, gradient: "from-rose-500/15 via-rose-600/5 to-transparent", iconColor: "text-rose-400", iconBg: "bg-rose-500/10", sortKey: "killpoints" },
-  "Total Deaths": { icon: Skull, gradient: "from-amber-500/15 via-amber-600/5 to-transparent", iconColor: "text-amber-400", iconBg: "bg-amber-500/10", sortKey: "deaths" },
+const statConfig: Record<string, { icon: typeof Users; gradient: string; iconColor: string; iconBg: string; accentGradient: string; sortKey?: string }> = {
+  "Total Governors": { icon: Users, gradient: "from-blue-500/15 via-blue-600/5 to-transparent", iconColor: "text-blue-400", iconBg: "bg-blue-500/10", accentGradient: "from-blue-500 to-blue-400/0" },
+  "Total Power": { icon: TrendingUp, gradient: "from-violet-500/15 via-violet-600/5 to-transparent", iconColor: "text-violet-400", iconBg: "bg-violet-500/10", accentGradient: "from-violet-500 to-violet-400/0", sortKey: "power" },
+  "Total Kills": { icon: Crown, gradient: "from-emerald-500/15 via-emerald-600/5 to-transparent", iconColor: "text-emerald-400", iconBg: "bg-emerald-500/10", accentGradient: "from-emerald-500 to-emerald-400/0", sortKey: "total_kills" },
+  "Total Kill Points": { icon: Swords, gradient: "from-rose-500/15 via-rose-600/5 to-transparent", iconColor: "text-rose-400", iconBg: "bg-rose-500/10", accentGradient: "from-rose-500 to-rose-400/0", sortKey: "killpoints" },
+  "Total Deaths": { icon: Skull, gradient: "from-amber-500/15 via-amber-600/5 to-transparent", iconColor: "text-amber-400", iconBg: "bg-amber-500/10", accentGradient: "from-amber-500 to-amber-400/0", sortKey: "deaths" },
 };
 
 const medalColors = ["text-yellow-500", "text-gray-400", "text-amber-700"];
@@ -194,6 +194,7 @@ export default function DashboardPage() {
           const gradient = config?.gradient ?? "from-primary/10 to-primary/5";
           const iconColor = config?.iconColor ?? "text-primary";
           const iconBg = config?.iconBg ?? "bg-primary/10";
+          const accentGradient = config?.accentGradient ?? "from-primary to-primary/0";
           const sortKey = config?.sortKey;
           return (
             <Card
@@ -201,7 +202,7 @@ export default function DashboardPage() {
               className={`card-hover stat-glow border-white/[0.06] overflow-hidden${sortKey ? " cursor-pointer" : ""}`}
               onClick={sortKey ? () => navigate(`/rankings?sort=${sortKey}`) : undefined}
             >
-              <CardContent className={`p-5 flex flex-col gap-3 bg-gradient-to-br ${gradient}`}>
+              <CardContent className={`p-5 pb-4 flex flex-col gap-3 bg-gradient-to-br ${gradient}`}>
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{s.label}</span>
                   <div className={`h-8 w-8 rounded-xl ${iconBg} flex items-center justify-center ${iconColor} transition-transform duration-300 group-hover:scale-110`}>
@@ -209,6 +210,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 <span className="font-display text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">{s.value}</span>
+                <div className={`h-[2px] w-full rounded-full bg-gradient-to-r ${accentGradient} opacity-60`} />
               </CardContent>
             </Card>
           );
@@ -261,15 +263,30 @@ export default function DashboardPage() {
                   const top5 = [...governors]
                     .sort((a, b) => cat.getValue(b) - cat.getValue(a))
                     .slice(0, 5);
+                  const maxVal = top5.length ? cat.getValue(top5[0]) : 1;
                   const CatIcon = cat.icon;
+                  const barColorMap: Record<string, string> = {
+                    power: "from-violet-500/20 to-transparent",
+                    kp: "from-rose-500/20 to-transparent",
+                    deaths: "from-amber-500/20 to-transparent",
+                  };
+                  const barGradient = barColorMap[cat.key] ?? "from-primary/20 to-transparent";
                   return (
                     <TabsContent key={cat.key} value={cat.key} className="mt-0 px-5 pb-5">
                       <div className="divide-y divide-white/[0.04]">
-                        {top5.map((g, i) => (
+                        {top5.map((g, i) => {
+                          const pct = maxVal > 0 ? (cat.getValue(g) / maxVal) * 100 : 0;
+                          return (
                           <div
                             key={g.id}
-                            className="flex items-center gap-3 py-3 group hover:bg-white/[0.02] transition-colors duration-200 rounded-lg px-2 -mx-2"
+                            className="relative flex items-center gap-3 py-3 group hover:bg-white/[0.02] transition-colors duration-200 rounded-lg px-2 -mx-2 overflow-hidden"
                           >
+                            {/* Progress bar background */}
+                            <div
+                              className={`absolute inset-y-0 left-0 bg-gradient-to-r ${barGradient} rounded-lg transition-all duration-500`}
+                              style={{ width: `${pct}%` }}
+                            />
+                            <div className="relative flex items-center gap-3 flex-1 min-w-0">
                             {i < 3 ? (
                               <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${i === 0 ? 'bg-yellow-500/10' : i === 1 ? 'bg-gray-400/10' : 'bg-amber-700/10'}`}>
                                 <Medal className={`h-5 w-5 flex-shrink-0 ${medalColors[i]}`} />
@@ -296,8 +313,10 @@ export default function DashboardPage() {
                                 {fmt(cat.getValue(g))}
                               </span>
                             </div>
+                            </div>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </TabsContent>
                   );

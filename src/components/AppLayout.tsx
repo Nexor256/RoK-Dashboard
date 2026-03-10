@@ -47,6 +47,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           >
             <item.icon className={cn("h-4 w-4 transition-transform duration-300", !isActive && "group-hover:scale-110")} />
             {item.label}
+            {/* Bottom indicator */}
+            <span
+              className={cn(
+                "absolute -bottom-[5px] left-1/2 -translate-x-1/2 h-[2px] rounded-full transition-all duration-300",
+                isActive
+                  ? "w-3/5 bg-primary-foreground opacity-80"
+                  : "w-0 bg-primary group-hover:w-2/5 group-hover:opacity-60"
+              )}
+            />
           </Link>
         );
       })}
@@ -183,6 +192,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       {/* ── Main Content ───────────────────────────────────── */}
       <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-[1800px] mx-auto w-full relative z-10">{children}</main>
+      <footer className="border-t border-white/[0.06] px-4 sm:px-6 py-4 text-center">
+        <span className="text-xs text-muted-foreground/60">ROK Dashboard · {new Date().getFullYear()}</span>
+      </footer>
       <CompareDrawer />
       <CompareTray />
       <CommandPalette />

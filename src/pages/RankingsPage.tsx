@@ -40,7 +40,7 @@ function getSortValue(g: GovernorStat, key: SortKey): number | string {
   return (g as any)[key] ?? 0;
 }
 
-/** Trend arrow shown next to a stat when a previous snapshot value exists */
+/** Trend arrow + inline delta shown next to a stat when a previous snapshot value exists */
 function Trend({ current, previous }: { current: number; previous: number | undefined }) {
   if (previous === undefined) return null;
   const delta = current - previous;
@@ -49,14 +49,15 @@ function Trend({ current, previous }: { current: number; previous: number | unde
     <TooltipProvider delayDuration={200}>
       <Tooltip>
         <TooltipTrigger asChild>
-          <span className="inline-flex items-center ml-1">
+          <span className={`inline-flex items-center gap-0.5 text-[10px] font-semibold tabular-nums ${delta > 0 ? "text-emerald-500" : "text-red-400"}`}>
             {delta > 0
-              ? <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
-              : <TrendingDown className="h-3.5 w-3.5 text-red-500" />}
+              ? <TrendingUp className="h-3 w-3" />
+              : <TrendingDown className="h-3 w-3" />}
+            {delta > 0 ? "+" : ""}{fmt(delta)}
           </span>
         </TooltipTrigger>
         <TooltipContent side="top" className="text-xs">
-          {delta > 0 ? "+" : ""}{fmt(delta)}
+          Previous: {fmt(previous)}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
