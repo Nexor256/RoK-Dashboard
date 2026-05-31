@@ -106,8 +106,8 @@ It's designed so any kingdom can fork, deploy, and run their own instance.
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/AbdUlrahman097/ROK-dashboard.git
-cd ROK-dashboard
+git clone https://github.com/Nexor255/RoK-Dashboard.git
+cd RoK-Dashboard
 ```
 
 ### 2. Install dependencies
@@ -164,7 +164,7 @@ Open [http://localhost:5173](http://localhost:5173) — the first registered use
 3. Add the environment variables (see below)
 4. Deploy — Vercel auto-detects Vite and builds it
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FAbdUlrahman097%2FROK-dashboard&env=VITE_SUPABASE_URL,VITE_SUPABASE_PUBLISHABLE_KEY&envDescription=Supabase%20project%20credentials&project-name=rok-dashboard&repository-name=rok-dashboard)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FNexor255%2FRoK-Dashboard&env=VITE_SUPABASE_URL,VITE_SUPABASE_PUBLISHABLE_KEY&envDescription=Supabase%20project%20credentials&project-name=rok-dashboard&repository-name=rok-dashboard)
 
 ### Option B: Deploy to Netlify
 
