@@ -38,6 +38,11 @@ import {
   DEFAULT_WEIGHTS,
   type DkpWeights,
 } from "@/hooks/useDkpWeights";
+import { SplitText } from "@/components/ui/SplitText";
+import { ShinyText } from "@/components/ui/ShinyText";
+import { TableSkeleton } from "@/components/ui/TableSkeleton";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   useKvKWars,
   useCreateKvKWar,
@@ -268,6 +273,8 @@ export default function KvKPage() {
       const afterStats = statsBySnapshot.get(w.snapshot_after_id!) ?? [];
 
       for (const gStat of afterStats) {
+        if (gStat.city_hall_level !== 25) continue;
+        
         const govKey = gStat.governor_id || gStat.governor_name;
         if (!govMap.has(govKey)) {
           govMap.set(govKey, {
@@ -510,19 +517,24 @@ export default function KvKPage() {
 
   if (snapsLoading || warsLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="space-y-5 page-transition">
+        <div className="space-y-2">
+          <Skeleton className="h-9 w-56" />
+          <Skeleton className="h-4 w-72" />
+        </div>
+        <TableSkeleton rows={8} columns={5} />
       </div>
     );
   }
 
   if (!snapshots?.length) {
     return (
-      <div className="space-y-4">
-        <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight">KvK Performance</h1>
-        <p className="text-muted-foreground">
-          No snapshots yet. Upload general governor data to start tracking KvK performance.
-        </p>
+      <div className="page-transition">
+        <EmptyState
+          title="No KvK Data Yet"
+          description="Upload general governor data to start tracking KvK performance."
+          icon={<Swords className="h-5 w-5 text-primary-foreground" />}
+        />
       </div>
     );
   }
@@ -530,11 +542,11 @@ export default function KvKPage() {
   return (
     <div className="space-y-6 page-transition">
       <div>
-        <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight">
-          <span className="text-gradient">KvK Performance</span>
+        <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight flex items-center">
+          <span className="text-gradient"><SplitText text="KvK Performance" /></span>
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Track individual war events &amp; compute DKP from snapshot diffs
+          <ShinyText text="Track individual war events & compute DKP from snapshot diffs" speed={4} />
         </p>
       </div>
 

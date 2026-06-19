@@ -11,6 +11,9 @@ import { CompareProvider } from "@/hooks/useCompare";
 import CompareDrawer, { CompareTray } from "@/components/CompareDrawer";
 import CommandPalette from "@/components/CommandPalette";
 import ChangePasswordDialog from "@/components/ChangePasswordDialog";
+import { Particles } from "@/components/ui/Particles";
+import { FuzzyOverlay } from "@/components/ui/FuzzyOverlay";
+import GlobalProfileModal from "@/components/GlobalProfileModal";
 
 const navItems = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -80,6 +83,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <CompareProvider>
     <div className="min-h-screen flex flex-col relative">
+      <Particles particleCount={100} />
+      <FuzzyOverlay />
       {/* ── Header ─────────────────────────────────────────── */}
       <header className="sticky top-0 z-50 glass px-4 sm:px-6 py-3 flex items-center justify-between transition-shadow duration-300 hover:shadow-lg">
         {/* Logo */}
@@ -198,6 +203,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <CompareDrawer />
       <CompareTray />
       <CommandPalette />
+      <GlobalProfileModal />
     </div>
     </CompareProvider>
   );

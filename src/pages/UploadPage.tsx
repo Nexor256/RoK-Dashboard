@@ -17,11 +17,15 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  AnimatedTableBody,
+  AnimatedTableRow,
 } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2, Trash2, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { parseCSV, normalizeHeaders, type ParsedRow } from "@/lib/csv";
+import { SplitText } from "@/components/ui/SplitText";
+import { ShinyText } from "@/components/ui/ShinyText";
 
 const GENERAL_COLUMNS = [
   "governor_id", "governor_name", "alliance", "power",
@@ -86,7 +90,7 @@ export default function UploadPage() {
       };
       reader.readAsText(file);
     },
-    [expectedColumns]
+    []
   );
 
   const handleUpload = async () => {
@@ -139,7 +143,9 @@ export default function UploadPage() {
           helps: parseInt(row.helps || "0", 10) || 0,
           city_hall_level: parseInt(row.city_hall_level || "0", 10) || 0,
         }));
-        const { error: insertError } = await supabase.from("governor_stats").insert(rows);
+        // Supabase generated types for governor_stats are incomplete, so we cast to any[]
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error: insertError } = await supabase.from("governor_stats").insert(rows as any[]);
         if (insertError) throw insertError;
       } catch (insertErr) {
         // Rollback: delete the orphan snapshot
@@ -170,10 +176,12 @@ export default function UploadPage() {
   return (
     <div className="space-y-6 max-w-5xl page-transition">
       <div>
-        <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight">
-          <span className="text-gradient">Upload Data</span>
+        <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight flex items-center">
+          <span className="text-gradient"><SplitText text="Upload Data" /></span>
         </h1>
-        <p className="text-sm text-muted-foreground mt-1">Import governor data from CSV spreadsheets</p>
+        <p className="text-sm text-muted-foreground mt-1">
+          <ShinyText text="Import governor data from CSV spreadsheets" speed={4} />
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -299,22 +307,22 @@ export default function UploadPage() {
                     ))}
                   </TableRow>
                 </TableHeader>
-                <TableBody>
+                <AnimatedTableBody>
                   {parsedData.slice(0, 10).map((row, i) => (
-                    <TableRow key={i}>
+                    <AnimatedTableRow key={i}>
                       {expectedColumns.map((col) => (
                         <TableCell key={col}>{row[col] ?? "—"}</TableCell>
                       ))}
-                    </TableRow>
+                    </AnimatedTableRow>
                   ))}
                   {parsedData.length > 10 && (
-                    <TableRow>
+                    <AnimatedTableRow>
                       <TableCell colSpan={expectedColumns.length} className="text-center text-muted-foreground">
                         ... and {parsedData.length - 10} more rows
                       </TableCell>
-                    </TableRow>
+                    </AnimatedTableRow>
                   )}
-                </TableBody>
+                </AnimatedTableBody>
               </Table>
             </div>
           </CardContent>

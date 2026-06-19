@@ -6,14 +6,19 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow, AnimatedTableBody, AnimatedTableRow
 } from "@/components/ui/table";
 import GovernorProfileCard from "@/components/GovernorProfileCard";
 import CompareContextMenuContent from "@/components/CompareContextMenuContent";
 import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
-import { ArrowUp, ArrowDown, Minus, Loader2 } from "lucide-react";
+import { ArrowUp, ArrowDown, Minus, Loader2, History } from "lucide-react";
+import { SplitText } from "@/components/ui/SplitText";
+import { ShinyText } from "@/components/ui/ShinyText";
+import { TableSkeleton } from "@/components/ui/TableSkeleton";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Skeleton } from "@/components/ui/skeleton";
 
 function Delta({ value }: { value: number }) {
   if (value > 0) return <span className="text-emerald-500 font-semibold flex items-center gap-1 tabular-nums"><ArrowUp className="h-3 w-3" />+{fmt(value)}</span>;
@@ -72,8 +77,12 @@ export default function SnapshotsPage() {
 
   if (snapsLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="space-y-5 page-transition">
+        <div className="space-y-2">
+          <Skeleton className="h-9 w-56" />
+          <Skeleton className="h-4 w-72" />
+        </div>
+        <TableSkeleton rows={6} columns={5} />
       </div>
     );
   }
@@ -89,9 +98,12 @@ export default function SnapshotsPage() {
 
   if (snapshots.length < 2) {
     return (
-      <div className="space-y-4">
-        <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight"><span className="text-gradient">Historical Snapshots</span></h1>
-        <p className="text-muted-foreground">Upload at least two snapshots to compare them.</p>
+      <div className="page-transition">
+        <EmptyState
+          title="Not Enough Snapshots"
+          description="Upload at least two snapshots to compare governor data across time."
+          icon={<History className="h-5 w-5 text-primary-foreground" />}
+        />
       </div>
     );
   }
@@ -99,10 +111,12 @@ export default function SnapshotsPage() {
   return (
     <div className="space-y-6 page-transition">
       <div>
-        <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight">
-          <span className="text-gradient">Historical Snapshots</span>
+        <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight flex items-center">
+          <span className="text-gradient"><SplitText text="Historical Snapshots" /></span>
         </h1>
-        <p className="text-sm text-muted-foreground mt-1">Compare governor data across different snapshots</p>
+        <p className="text-sm text-muted-foreground mt-1">
+          <ShinyText text="Compare governor data across different snapshots" speed={4} />
+        </p>
       </div>
 
       <Card className="border-white/[0.06] glass-panel">
@@ -159,11 +173,11 @@ export default function SnapshotsPage() {
                     <TableHead>Δ Kill Points</TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
+                <AnimatedTableBody>
                   {comparison.map((row) => {
                     const isMe = !!governorId && row.governor_id === governorId;
                     return (
-                    <TableRow key={row.id} className={isMe ? "hover:bg-primary/10 transition-colors duration-200 border-l-2 border-l-primary bg-primary/5" : "hover:bg-white/[0.03] transition-colors duration-200 even:bg-white/[0.015]"}>
+                    <AnimatedTableRow key={row.id} className={isMe ? "hover:bg-primary/10 transition-colors duration-200 border-l-2 border-l-primary bg-primary/5" : "hover:bg-white/[0.03] transition-colors duration-200 even:bg-white/[0.015]"}>
                       <TableCell>
                         <div className="flex items-center gap-1.5">
                           <ContextMenu>
@@ -190,17 +204,17 @@ export default function SnapshotsPage() {
                       <TableCell>{fmt(row.killsB)}</TableCell>
                       <TableCell><Delta value={row.killsDelta} /></TableCell>
                       <TableCell><Delta value={row.kpDelta} /></TableCell>
-                    </TableRow>
+                    </AnimatedTableRow>
                     );
                   })}
                   {!comparison.length && (
-                    <TableRow>
+                    <AnimatedTableRow>
                       <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                         No governor data found for the selected snapshots.
                       </TableCell>
-                    </TableRow>
+                    </AnimatedTableRow>
                   )}
-                </TableBody>
+                </AnimatedTableBody>
               </Table>
             </div>
           )}

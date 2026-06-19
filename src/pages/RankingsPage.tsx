@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useLatestGovernorStats, usePreviousGovernorStats, type GovernorStat } from "@/hooks/useGovernorData";
 
@@ -10,7 +10,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow, AnimatedTableBody, AnimatedTableRow
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -24,8 +24,13 @@ import CompareContextMenuContent from "@/components/CompareContextMenuContent";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu";
-import { ArrowUpDown, ChevronLeft, ChevronRight, Download, Search, Loader2, TrendingUp, TrendingDown, Columns3, Palette, BookmarkPlus, Bookmark, X } from "lucide-react";
+import { ArrowUpDown, ChevronLeft, ChevronRight, Download, Search, Loader2, TrendingUp, TrendingDown, Columns3, Palette, BookmarkPlus, Bookmark, X, TableProperties } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SplitText } from "@/components/ui/SplitText";
+import { ShinyText } from "@/components/ui/ShinyText";
+import { TableSkeleton } from "@/components/ui/TableSkeleton";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { useVirtualizer } from "@tanstack/react-virtual";
 
 
 type SortKey =
@@ -37,7 +42,7 @@ type SortKey =
 function getSortValue(g: GovernorStat, key: SortKey): number | string {
   if (key === "governor_name") return g.governor_name;
   if (key === "alliance") return g.alliance ?? "";
-  return (g as any)[key] ?? 0;
+  return (g as unknown as Record<string, number | string>)[key] ?? 0;
 }
 
 /** Trend arrow + inline delta shown next to a stat when a previous snapshot value exists */
@@ -131,7 +136,7 @@ function heatmapStyle(value: number, min: number, max: number, isDark: boolean):
 
 export default function RankingsPage() {
   const { data, isLoading } = useLatestGovernorStats();
-  const governors = data?.governors ?? [];
+  const governors = useMemo(() => data?.governors ?? [], [data?.governors]);
   const { data: prevData } = usePreviousGovernorStats();
 
 
@@ -158,8 +163,6 @@ export default function RankingsPage() {
   const [allianceFilter, setAllianceFilter] = useState("all");
   const [sortKey, setSortKey] = useState<SortKey>(initialSort);
   const [sortAsc, setSortAsc] = useState(false);
-  const [page, setPage] = useState(0);
-  const [perPage, setPerPage] = useState(10);
   const [selectedGov, setSelectedGov] = useState<GovernorStat | null>(null);
   const [heatmapOn, setHeatmapOn] = useState(false);
   const [visibleKeys, setVisibleKeys] = useState<string[]>(DEFAULT_VISIBLE);
@@ -170,10 +173,11 @@ export default function RankingsPage() {
   // Clear the ?sort param after consuming it
   useEffect(() => {
     if (searchParams.has("sort")) {
-      searchParams.delete("sort");
-      setSearchParams(searchParams, { replace: true });
+      const next = new URLSearchParams(searchParams);
+      next.delete("sort");
+      setSearchParams(next, { replace: true });
     }
-  }, []);
+  }, [searchParams, setSearchParams]);
 
   // Sync column visibility from preferences on load
   useEffect(() => {
@@ -216,8 +220,14 @@ export default function RankingsPage() {
     return list;
   }, [governors, search, allianceFilter, sortKey, sortAsc]);
 
-  const paged = filtered.slice(page * perPage, (page + 1) * perPage);
-  const totalPages = Math.ceil(filtered.length / perPage);
+  // Virtualizer
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+  const rowVirtualizer = useVirtualizer({
+    count: filtered.length,
+    getScrollElement: () => tableContainerRef.current,
+    estimateSize: () => 44,
+    overscan: 20,
+  });
 
   function downloadCSV() {
     const exportCols = visibleColumns;
@@ -241,7 +251,6 @@ export default function RankingsPage() {
   function toggleSort(key: SortKey) {
     if (sortKey === key) setSortAsc(!sortAsc);
     else { setSortKey(key); setSortAsc(false); }
-    setPage(0);
   }
 
   // Compute min/max for heatmap columns across the filtered set
@@ -250,7 +259,7 @@ export default function RankingsPage() {
     for (const key of HEATMAP_KEYS) {
       let min = Infinity, max = -Infinity;
       for (const g of filtered) {
-        const v = (g as any)[key] ?? 0;
+        const v = (g as unknown as Record<string, number>)[key] ?? 0;
         if (v < min) min = v;
         if (v > max) max = v;
       }
@@ -287,7 +296,6 @@ export default function RankingsPage() {
       setSortAsc(false);
       setVisibleKeys(DEFAULT_VISIBLE);
       setActivePreset("");
-      setPage(0);
       return;
     }
     const p = presets.find((pr) => pr.name === name);
@@ -298,7 +306,6 @@ export default function RankingsPage() {
     setSortAsc(p.sortAsc ?? false);
     if (p.columns?.length) setVisibleKeys(p.columns);
     setActivePreset(name);
-    setPage(0);
   }
 
   function deletePreset(name: string) {
@@ -321,30 +328,19 @@ export default function RankingsPage() {
           <Skeleton className="h-10 w-36" />
           <Skeleton className="h-10 w-32" />
         </div>
-        <div className="rounded-xl border border-white/[0.06] overflow-hidden">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-4 px-4 py-3 border-b border-white/[0.04]">
-              <Skeleton className="h-4 w-6" />
-              <Skeleton className="h-4 w-28" />
-              <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-4 w-16 ml-auto" />
-              <Skeleton className="h-4 w-16" />
-              <Skeleton className="h-4 w-16" />
-            </div>
-          ))}
-        </div>
+        <TableSkeleton rows={10} columns={6} />
       </div>
     );
   }
 
   if (!governors.length) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 text-center page-transition">
-        <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-          <Search className="h-8 w-8 text-primary" />
-        </div>
-        <h2 className="text-xl font-bold text-foreground">No Rankings Yet</h2>
-        <p className="text-sm text-muted-foreground mt-1 max-w-sm">Upload a governor snapshot to see rankings and leaderboard data.</p>
+      <div className="page-transition">
+        <EmptyState
+          title="No Rankings Yet"
+          description="Upload a governor snapshot to see rankings and leaderboard data."
+          icon={<TableProperties className="h-5 w-5 text-primary-foreground" />}
+        />
       </div>
     );
   }
@@ -352,10 +348,12 @@ export default function RankingsPage() {
   return (
     <div className="space-y-5 page-transition">
       <div>
-        <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight">
-          <span className="text-gradient">Governor Rankings</span>
+        <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight flex items-center">
+          <span className="text-gradient"><SplitText text="Governor Rankings" /></span>
         </h1>
-        <p className="text-sm text-muted-foreground mt-1">Detailed stats for all governors in the kingdom</p>
+        <p className="text-sm text-muted-foreground mt-1">
+          <ShinyText text="Detailed stats for all governors in the kingdom" speed={4} />
+        </p>
       </div>
 
       {/* Filters */}
@@ -365,11 +363,11 @@ export default function RankingsPage() {
           <Input
             placeholder="Search name or ID..."
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(0); }}
+            onChange={(e) => { setSearch(e.target.value); }}
             className="pl-9 bg-white/[0.04] border-white/[0.06] focus:border-primary/50 transition-colors"
           />
         </div>
-        <Select value={allianceFilter} onValueChange={(v) => { setAllianceFilter(v); setPage(0); }}>
+        <Select value={allianceFilter} onValueChange={(v) => { setAllianceFilter(v); }}>
           <SelectTrigger className="w-[160px] bg-white/[0.04] border-white/[0.06]">
             <SelectValue placeholder="All Alliances" />
           </SelectTrigger>
@@ -377,16 +375,6 @@ export default function RankingsPage() {
             <SelectItem value="all">All Alliances</SelectItem>
             {alliances.map((a) => (
               <SelectItem key={a!} value={a!}>[{a}]</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={String(perPage)} onValueChange={(v) => { setPerPage(Number(v)); setPage(0); }}>
-          <SelectTrigger className="w-[120px] bg-white/[0.04] border-white/[0.06]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {[10, 15, 20].map((n) => (
-              <SelectItem key={n} value={String(n)}>{n} rows</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -466,7 +454,7 @@ export default function RankingsPage() {
 
       {/* Table */}
       <Card className="border-white/[0.06] overflow-hidden glass-panel">
-        <div className="overflow-x-auto scrollbar-hide">
+        <div ref={tableContainerRef} className="overflow-auto scrollbar-hide max-h-[70vh]">
           <Table className="w-full sticky-header">
             <TableHeader>
               <TableRow className="bg-white/[0.02] hover:bg-white/[0.02] border-b border-white/[0.06]">
@@ -486,12 +474,33 @@ export default function RankingsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paged.map((g, i) => {
+              {rowVirtualizer.getVirtualItems().length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={visibleColumns.length + 1} className="text-center text-muted-foreground py-8">
+                    No governors match your filters.
+                  </TableCell>
+                </TableRow>
+              )}
+              {/* spacer top */}
+              {rowVirtualizer.getVirtualItems().length > 0 && (
+                <tr style={{ height: rowVirtualizer.getVirtualItems()[0]?.start ?? 0 }} />
+              )}
+              {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                const g = filtered[virtualRow.index];
                 const isMe = !!governorId && g.governor_id === governorId;
                 return (
-                  <TableRow key={g.id} className={isMe ? "hover:bg-primary/10 transition-colors duration-200 border-l-2 border-l-primary bg-primary/5" : "hover:bg-white/[0.03] transition-colors duration-200 even:bg-white/[0.015]"}>
+                  <TableRow
+                    key={g.governor_id || g.governor_name}
+                    data-index={virtualRow.index}
+                    ref={rowVirtualizer.measureElement}
+                    className={
+                      isMe
+                        ? "hover:bg-primary/10 transition-colors duration-200 border-l-2 border-l-primary bg-primary/5"
+                        : "hover:bg-white/[0.03] transition-colors duration-200 even:bg-white/[0.015]"
+                    }
+                  >
                     <TableCell className="text-center text-muted-foreground text-xs font-medium">
-                      {page * perPage + i + 1}
+                      {virtualRow.index + 1}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1.5">
@@ -593,6 +602,10 @@ export default function RankingsPage() {
                   </TableRow>
                 );
               })}
+              {/* spacer bottom */}
+              {rowVirtualizer.getVirtualItems().length > 0 && (
+                <tr style={{ height: rowVirtualizer.getTotalSize() - (rowVirtualizer.getVirtualItems()[rowVirtualizer.getVirtualItems().length - 1]?.end ?? 0) }} />
+              )}
             </TableBody>
           </Table>
         </div>
@@ -605,17 +618,9 @@ export default function RankingsPage() {
         onClose={() => setSelectedGov(null)}
       />
 
-      {/* Pagination */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-sm text-muted-foreground">
-        <span>Showing <strong className="text-foreground">{page * perPage + 1}–{Math.min((page + 1) * perPage, filtered.length)}</strong> of {filtered.length}</span>
-        <div className="flex gap-1.5">
-          <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(page - 1)} className="rounded-lg border-white/[0.06] hover:bg-white/[0.06]">
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)} className="rounded-lg border-white/[0.06] hover:bg-white/[0.06]">
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
+      {/* Row count */}
+      <div className="text-sm text-muted-foreground">
+        Showing <strong className="text-foreground">{filtered.length}</strong> governors
       </div>
 
       {/* Save Preset Dialog */}

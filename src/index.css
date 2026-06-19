@@ -286,6 +286,15 @@
     100% { transform: translateX(100%); }
   }
 
+  /* Shiny text animation */
+  @keyframes shine {
+    0% { background-position: 100% 0; }
+    100% { background-position: -100% 0; }
+  }
+  .animate-shine {
+    animation: shine 3s infinite linear;
+  }
+
   /* Page fade-in transition */
   @keyframes page-fade-in {
     from { opacity: 0; transform: translateY(6px); }

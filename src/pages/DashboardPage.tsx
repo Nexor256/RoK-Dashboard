@@ -13,6 +13,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { fmt } from "@/lib/utils";
 import GovernorProfileCard from "@/components/GovernorProfileCard";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SplitText } from "@/components/ui/SplitText";
+import { ShinyText } from "@/components/ui/ShinyText";
+import { SpotlightCard } from "@/components/ui/SpotlightCard";
+import { CountUp } from "@/components/ui/CountUp";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const statConfig: Record<string, { icon: typeof Users; gradient: string; iconColor: string; iconBg: string; accentGradient: string; sortKey?: string }> = {
   "Total Governors": { icon: Users, gradient: "from-blue-500/15 via-blue-600/5 to-transparent", iconColor: "text-blue-400", iconBg: "bg-blue-500/10", accentGradient: "from-blue-500 to-blue-400/0" },
@@ -104,33 +109,33 @@ export default function DashboardPage() {
 
   if (!governors.length) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 text-center page-transition">
-        <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-          <Crown className="h-8 w-8 text-primary" />
-        </div>
-        <h2 className="text-xl font-bold text-foreground">No Kingdom Data Yet</h2>
-        <p className="text-sm text-muted-foreground mt-1 max-w-sm">Upload a governor snapshot to see your kingdom's stats, leaderboards, and trends.</p>
+      <div className="page-transition">
+        <EmptyState
+          title="No Kingdom Data Yet"
+          description="Upload a governor snapshot to see your kingdom's stats, leaderboards, and trends."
+          icon={<Crown className="h-5 w-5 text-primary-foreground" />}
+        />
       </div>
     );
   }
 
   const stats = [
-    { label: "Total Governors", value: governors.length.toString() },
+    { label: "Total Governors", value: governors.length },
     {
       label: "Total Power",
-      value: fmt(governors.reduce((a, g) => a + (g.power ?? 0), 0)),
+      value: governors.reduce((a, g) => a + (g.power ?? 0), 0),
     },
     {
       label: "Total Kills",
-      value: fmt(governors.reduce((a, g) => a + (g.total_kills ?? 0), 0)),
+      value: governors.reduce((a, g) => a + (g.total_kills ?? 0), 0),
     },
     {
       label: "Total Kill Points",
-      value: fmt(governors.reduce((a, g) => a + (g.killpoints ?? 0), 0)),
+      value: governors.reduce((a, g) => a + (g.killpoints ?? 0), 0),
     },
     {
       label: "Total Deaths",
-      value: fmt(governors.reduce((a, g) => a + (g.deaths ?? 0), 0)),
+      value: governors.reduce((a, g) => a + (g.deaths ?? 0), 0),
     },
   ];
 
@@ -175,8 +180,8 @@ export default function DashboardPage() {
               )}
             </div>
           )}
-          <h1 className="font-display text-2xl sm:text-4xl font-bold">
-            <span className="text-gradient">Governor Dashboard</span>
+          <h1 className="font-display text-2xl sm:text-4xl font-bold flex items-center">
+            <span className="text-gradient"><SplitText text="Governor Dashboard" /></span>
           </h1>
         </div>
         {snapshot && (
@@ -197,9 +202,9 @@ export default function DashboardPage() {
           const accentGradient = config?.accentGradient ?? "from-primary to-primary/0";
           const sortKey = config?.sortKey;
           return (
-            <Card
+            <SpotlightCard
               key={s.label}
-              className={`card-hover stat-glow border-white/[0.06] overflow-hidden${sortKey ? " cursor-pointer" : ""}`}
+              className={`card-hover stat-glow${sortKey ? " cursor-pointer" : ""}`}
               onClick={sortKey ? () => navigate(`/rankings?sort=${sortKey}`) : undefined}
             >
               <CardContent className={`p-5 pb-4 flex flex-col gap-3 bg-gradient-to-br ${gradient}`}>
@@ -209,10 +214,12 @@ export default function DashboardPage() {
                     <Icon className="h-4 w-4" />
                   </div>
                 </div>
-                <span className="font-display text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">{s.value}</span>
+                <span className="font-display text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
+                  <CountUp to={s.value as number} formatter={fmt} />
+                </span>
                 <div className={`h-[2px] w-full rounded-full bg-gradient-to-r ${accentGradient} opacity-60`} />
               </CardContent>
-            </Card>
+            </SpotlightCard>
           );
         })}
       </div>

@@ -1,4 +1,5 @@
 import * as React from "react";
+import { motion, Variants } from "framer-motion";
 
 import { cn } from "@/lib/utils";
 
@@ -69,4 +70,32 @@ const TableCaption = React.forwardRef<HTMLTableCaptionElement, React.HTMLAttribu
 );
 TableCaption.displayName = "TableCaption";
 
-export { Table, TableHeader, TableBody, TableFooter, TableHead, TableRow, TableCell, TableCaption };
+const tableBodyVariants: Variants = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { staggerChildren: 0.03 } },
+};
+
+const AnimatedTableBody = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(
+  (props, ref) => {
+    const MotionBody = motion.create(TableBody);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return <MotionBody variants={tableBodyVariants} initial="hidden" animate="show" ref={ref} {...(props as any)} />;
+  }
+);
+AnimatedTableBody.displayName = "AnimatedTableBody";
+
+const tableRowVariants: Variants = {
+  hidden: { opacity: 0, y: 10 },
+  show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } },
+};
+
+const AnimatedTableRow = React.forwardRef<HTMLTableRowElement, React.HTMLAttributes<HTMLTableRowElement>>(
+  (props, ref) => {
+    const MotionRow = motion.create(TableRow);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return <MotionRow variants={tableRowVariants} ref={ref} {...(props as any)} />;
+  }
+);
+AnimatedTableRow.displayName = "AnimatedTableRow";
+
+export { Table, TableHeader, TableBody, TableFooter, TableHead, TableRow, TableCell, TableCaption, AnimatedTableBody, AnimatedTableRow };

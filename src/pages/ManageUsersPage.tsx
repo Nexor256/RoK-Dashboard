@@ -5,13 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, AnimatedTableBody, AnimatedTableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UserPlus, Loader2, Users, Shield, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { SplitText } from "@/components/ui/SplitText";
+import { ShinyText } from "@/components/ui/ShinyText";
 
 interface Profile {
   id: string;
@@ -113,7 +115,9 @@ export default function ManageUsersPage() {
           try {
             const body = await error.context.json();
             msg = body?.error || msg;
-          } catch {}
+          } catch {
+            // ignore
+          }
         } else {
           msg = error.message || msg;
         }
@@ -144,9 +148,11 @@ export default function ManageUsersPage() {
           <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center">
             <Shield className="h-5 w-5 text-primary" />
           </div>
-          <span className="text-gradient">Manage Users</span>
+          <span className="text-gradient"><SplitText text="Manage Users" /></span>
         </h1>
-        <p className="text-sm text-muted-foreground mt-1">Create and manage player accounts</p>
+        <p className="text-sm text-muted-foreground mt-1">
+          <ShinyText text="Create and manage player accounts" speed={4} />
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -231,9 +237,9 @@ export default function ManageUsersPage() {
                     <TableHead>Joined</TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
+                <AnimatedTableBody>
                   {profiles.map((p) => (
-                    <TableRow key={p.id}>
+                    <AnimatedTableRow key={p.id}>
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar className="h-8 w-8">
@@ -261,9 +267,9 @@ export default function ManageUsersPage() {
                       <TableCell className="text-muted-foreground text-sm">
                         {new Date(p.created_at).toLocaleDateString()}
                       </TableCell>
-                    </TableRow>
+                    </AnimatedTableRow>
                   ))}
-                </TableBody>
+                </AnimatedTableBody>
               </Table>
             )}
           </CardContent>

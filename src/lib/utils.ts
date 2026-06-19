@@ -12,7 +12,7 @@ export function fmt(n: number): string {
   if (abs >= 1_000_000_000) return sign + (abs / 1_000_000_000).toFixed(1) + "B";
   if (abs >= 1_000_000) return sign + (abs / 1_000_000).toFixed(1) + "M";
   if (abs >= 1_000) return sign + (abs / 1_000).toFixed(1) + "K";
-  return n.toString();
+  return Math.round(n).toString();
 }
 
 export interface RankEntry { rank: number; total: number }

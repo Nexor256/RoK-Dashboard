@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Crown, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { SplitText } from "@/components/ui/SplitText";
+import { ShinyText } from "@/components/ui/ShinyText";
 
 export default function AuthPage() {
   // Force dark mode on the login page
@@ -54,9 +56,13 @@ export default function AuthPage() {
               <Crown className="h-5 w-5 text-primary-foreground drop-shadow" />
             </div>
           </div>
-          <span className="font-display text-2xl font-bold text-gradient block mb-1">ROK Tracker</span>
+          <span className="font-display text-2xl font-bold text-gradient block mb-1">
+            <SplitText text="ROK Tracker" />
+          </span>
           <CardTitle className="text-lg">Sign In</CardTitle>
-          <CardDescription>Sign in with your Governor ID</CardDescription>
+          <CardDescription>
+            <ShinyText text="Sign in with your Governor ID" speed={4} />
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">

@@ -6,7 +6,13 @@ import {
   AreaChart, Area, Legend,
 } from "recharts";
 import { fmt } from "@/lib/utils";
-import { Loader2, TrendingUp, Swords, Skull, Gem } from "lucide-react";
+import { Loader2, TrendingUp, Swords, Skull, Gem, BarChart3 } from "lucide-react";
+import { SplitText } from "@/components/ui/SplitText";
+import { ShinyText } from "@/components/ui/ShinyText";
+import { SpotlightCard } from "@/components/ui/SpotlightCard";
+import { AnimatedGroup } from "@/components/ui/AnimatedGroup";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface KingdomPoint {
   date: string;
@@ -81,8 +87,31 @@ export default function ChartsPage() {
 
   const loading = snapsLoading || statsLoading;
 
-  if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
-  if (!data.length) return <div className="flex items-center justify-center h-64 text-muted-foreground">No snapshot data yet. Upload snapshots to see kingdom trends.</div>;
+  if (loading) return (
+    <div className="space-y-5 page-transition">
+      <div className="space-y-2">
+        <Skeleton className="h-9 w-56" />
+        <Skeleton className="h-4 w-72" />
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="rounded-xl border border-white/[0.06] p-5 space-y-3">
+            <Skeleton className="h-5 w-40" />
+            <Skeleton className="h-[200px] w-full rounded-lg" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+  if (!data.length) return (
+    <div className="page-transition">
+      <EmptyState
+        title="No Chart Data Yet"
+        description="Upload snapshots to see kingdom trends over time."
+        icon={<BarChart3 className="h-5 w-5 text-primary-foreground" />}
+      />
+    </div>
+  );
 
   const charts: {
     title: string;
@@ -172,17 +201,19 @@ export default function ChartsPage() {
   return (
     <div className="space-y-6 page-transition">
       <div>
-        <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight">
-          <span className="text-gradient">Kingdom Overview</span>
+        <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight flex items-center">
+          <span className="text-gradient"><SplitText text="Kingdom Overview" /></span>
         </h1>
-        <p className="text-sm text-muted-foreground mt-1">Track kingdom-wide trends across all snapshots</p>
+        <p className="text-sm text-muted-foreground mt-1">
+          <ShinyText text="Track kingdom-wide trends across all snapshots" speed={4} />
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <AnimatedGroup className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {charts.map((chart) => {
           const Icon = chart.icon;
           return (
-            <Card key={chart.title} className="border-white/[0.06] card-hover glass-panel overflow-hidden">
+            <SpotlightCard key={chart.title} className="card-hover">
               <CardHeader className="pb-2">
                 <CardTitle className="font-display text-base font-bold flex items-center gap-2.5">
                   <div className={`h-7 w-7 rounded-lg ${chart.iconBg} flex items-center justify-center`}>
@@ -194,10 +225,10 @@ export default function ChartsPage() {
               <CardContent>
                 {chart.content}
               </CardContent>
-            </Card>
+            </SpotlightCard>
           );
         })}
-      </div>
+      </AnimatedGroup>
     </div>
   );
 }
