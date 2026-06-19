@@ -14,6 +14,7 @@ import ChangePasswordDialog from "@/components/ChangePasswordDialog";
 import { Particles } from "@/components/ui/Particles";
 import { FuzzyOverlay } from "@/components/ui/FuzzyOverlay";
 import GlobalProfileModal from "@/components/GlobalProfileModal";
+import { AnimatedMesh } from "@/components/ui/AnimatedMesh";
 
 const navItems = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -83,6 +84,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <CompareProvider>
     <div className="min-h-screen flex flex-col relative">
+      <AnimatedMesh />
       <Particles particleCount={100} />
       <FuzzyOverlay />
       {/* ── Header ─────────────────────────────────────────── */}
