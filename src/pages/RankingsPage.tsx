@@ -30,6 +30,7 @@ import { SplitText } from "@/components/ui/SplitText";
 import { ShinyText } from "@/components/ui/ShinyText";
 import { TableSkeleton } from "@/components/ui/TableSkeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { TablePagination } from "@/components/TablePagination";
 import { useVirtualizer } from "@tanstack/react-virtual";
 
 
@@ -169,6 +170,8 @@ export default function RankingsPage() {
   const [showSavePreset, setShowSavePreset] = useState(false);
   const [presetName, setPresetName] = useState("");
   const [activePreset, setActivePreset] = useState<string>("");
+  const [pageIndex, setPageIndex] = useState(0);
+  const [pageSize, setPageSize] = useState(50);
 
   // Clear the ?sort param after consuming it
   useEffect(() => {
@@ -220,14 +223,16 @@ export default function RankingsPage() {
     return list;
   }, [governors, search, allianceFilter, sortKey, sortAsc]);
 
-  // Virtualizer
-  const tableContainerRef = useRef<HTMLDivElement>(null);
-  const rowVirtualizer = useVirtualizer({
-    count: filtered.length,
-    getScrollElement: () => tableContainerRef.current,
-    estimateSize: () => 44,
-    overscan: 20,
-  });
+  const paginatedRows = useMemo(() => {
+    const start = pageIndex * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, pageIndex, pageSize]);
+
+  useEffect(() => {
+    setPageIndex(0);
+  }, [search, allianceFilter, sortKey, sortAsc]);
+
+  // Removed Virtualizer
 
   function downloadCSV() {
     const exportCols = visibleColumns;
@@ -453,8 +458,8 @@ export default function RankingsPage() {
       )}
 
       {/* Table */}
-      <Card className="border-white/[0.06] overflow-hidden glass-panel">
-        <div ref={tableContainerRef} className="overflow-auto scrollbar-hide max-h-[70vh]">
+      <Card className="border-white/[0.06] glass-panel overflow-visible">
+        <div className="w-full">
           <Table className="w-full sticky-header">
             <TableHeader>
               <TableRow className="bg-white/[0.02] hover:bg-white/[0.02] border-b border-white/[0.06]">
@@ -474,25 +479,19 @@ export default function RankingsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rowVirtualizer.getVirtualItems().length === 0 && (
+              {paginatedRows.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={visibleColumns.length + 1} className="text-center text-muted-foreground py-8">
                     No governors match your filters.
                   </TableCell>
                 </TableRow>
               )}
-              {/* spacer top */}
-              {rowVirtualizer.getVirtualItems().length > 0 && (
-                <tr style={{ height: rowVirtualizer.getVirtualItems()[0]?.start ?? 0 }} />
-              )}
-              {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                const g = filtered[virtualRow.index];
+              {paginatedRows.map((g, i) => {
                 const isMe = !!governorId && g.governor_id === governorId;
+                const absoluteIndex = pageIndex * pageSize + i;
                 return (
                   <TableRow
                     key={g.governor_id || g.governor_name}
-                    data-index={virtualRow.index}
-                    ref={rowVirtualizer.measureElement}
                     className={
                       isMe
                         ? "hover:bg-primary/10 transition-colors duration-200 border-l-2 border-l-primary bg-primary/5"
@@ -500,7 +499,7 @@ export default function RankingsPage() {
                     }
                   >
                     <TableCell className="text-center text-muted-foreground text-xs font-medium">
-                      {virtualRow.index + 1}
+                      {absoluteIndex + 1}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1.5">
@@ -602,13 +601,16 @@ export default function RankingsPage() {
                   </TableRow>
                 );
               })}
-              {/* spacer bottom */}
-              {rowVirtualizer.getVirtualItems().length > 0 && (
-                <tr style={{ height: rowVirtualizer.getTotalSize() - (rowVirtualizer.getVirtualItems()[rowVirtualizer.getVirtualItems().length - 1]?.end ?? 0) }} />
-              )}
             </TableBody>
           </Table>
         </div>
+        <TablePagination
+          pageIndex={pageIndex}
+          pageSize={pageSize}
+          totalItems={filtered.length}
+          onPageChange={setPageIndex}
+          onPageSizeChange={setPageSize}
+        />
       </Card>
 
       {/* Governor profile popup */}

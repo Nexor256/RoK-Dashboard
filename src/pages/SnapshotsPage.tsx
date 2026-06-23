@@ -158,8 +158,8 @@ export default function SnapshotsPage() {
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <div className="rounded-lg border border-white/[0.06] overflow-x-auto">
-              <Table className="min-w-[800px]">
+            <div className="rounded-lg border border-white/[0.06] overflow-visible">
+              <Table className="min-w-[800px] sticky-header">
                 <TableHeader>
                   <TableRow className="bg-white/[0.02] hover:bg-white/[0.02] border-b border-white/[0.06]">
                     <TableHead>Governor</TableHead>

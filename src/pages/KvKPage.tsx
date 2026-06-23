@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,6 +40,7 @@ import {
 } from "@/hooks/useDkpWeights";
 import { SplitText } from "@/components/ui/SplitText";
 import { ShinyText } from "@/components/ui/ShinyText";
+import { TablePagination } from "@/components/TablePagination";
 import { TableSkeleton } from "@/components/ui/TableSkeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -210,6 +211,8 @@ export default function KvKPage() {
   const [alliance, setAlliance] = useState("all");
   const [sortKey, setSortKey] = useState<SortKey>("totalDkp");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [pageIndex, setPageIndex] = useState(0);
+  const [pageSize, setPageSize] = useState(50);
   const [weightsOpen, setWeightsOpen] = useState(false);
   const [warsOpen, setWarsOpen] = useState(false);
   const [editWeights, setEditWeights] = useState<DkpWeights | null>(null);
@@ -379,6 +382,15 @@ export default function KvKPage() {
     });
     return list;
   }, [kvkRows, search, alliance, sortKey, sortDir]);
+
+  const paginatedRows = useMemo(() => {
+    const start = pageIndex * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, pageIndex, pageSize]);
+
+  useEffect(() => {
+    setPageIndex(0);
+  }, [search, alliance, sortKey, sortDir]);
 
   const totals = useMemo(
     () => ({
@@ -1040,15 +1052,14 @@ export default function KvKPage() {
           </div>
 
           {/* Table */}
-          <Card className="border-white/[0.06] overflow-hidden glass-panel">
+          <Card className="border-white/[0.06] glass-panel overflow-visible">
             <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <Table>
+              <div className="w-full">
+                <Table className="sticky-header">
                   <TableHeader>
                     <TableRow className="bg-white/[0.02] hover:bg-white/[0.02] border-b border-white/[0.06]">
                       <TableHead>#</TableHead>
                       {sortableHead("Governor", "governor_name")}
-                      <TableHead>Alliance</TableHead>
                       {sortableHead("Power \u0394", "agg_power")}
                       {sortableHead("T5 Kills", "agg_t5")}
                       {sortableHead("T4 Kills", "agg_t4")}
@@ -1076,7 +1087,7 @@ export default function KvKPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filtered.map((g, i) => {
+                    {paginatedRows.map((g, i) => {
                       const participated = validWars.filter((w) => { const wg = g.wars[w.id]; return wg && (wg.dkp !== 0 || wg.kills_gained !== 0 || wg.deaths_gained !== 0); }).length;
                       const tier = findTier(g.power, tiers);
                       const totalDeaths = Object.values(g.wars).reduce((s, w) => s + w.deaths_gained, 0);
@@ -1091,25 +1102,25 @@ export default function KvKPage() {
                           key={g.governor_name}
                           className={isMe ? "hover:bg-primary/10 transition-colors duration-200 border-l-2 border-l-primary bg-primary/5" : "hover:bg-white/[0.03] transition-colors duration-200 even:bg-white/[0.015]"}
                         >
-                          <TableCell className="text-muted-foreground text-xs text-center">{i + 1}</TableCell>
+                          <TableCell className="text-muted-foreground text-xs text-center">{pageIndex * pageSize + i + 1}</TableCell>
                           <TableCell>
-                            <div className="flex items-center gap-1.5">
-                              <ContextMenu>
-                                <ContextMenuTrigger asChild>
-                                  <button
-                                    onClick={() => setSelectedGov(g)}
-                                    className="font-semibold text-primary hover:underline cursor-pointer text-left text-sm"
-                                  >
-                                    {g.governor_name}
-                                  </button>
-                                </ContextMenuTrigger>
-                                <CompareContextMenuContent gov={g} onViewProfile={() => setSelectedGov(g)} />
-                              </ContextMenu>
-                              {isMe && <Badge className="text-[10px] px-1.5 py-0 leading-4">You</Badge>}
+                            <div className="flex flex-col gap-0.5">
+                              <div className="flex items-center gap-1.5">
+                                <ContextMenu>
+                                  <ContextMenuTrigger asChild>
+                                    <button
+                                      onClick={() => setSelectedGov(g)}
+                                      className="font-semibold text-primary hover:underline cursor-pointer text-left text-sm leading-tight"
+                                    >
+                                      {g.governor_name}
+                                    </button>
+                                  </ContextMenuTrigger>
+                                  <CompareContextMenuContent gov={g} onViewProfile={() => setSelectedGov(g)} />
+                                </ContextMenu>
+                                {isMe && <Badge className="text-[10px] px-1.5 py-0 leading-4">You</Badge>}
+                              </div>
+                              {g.alliance && <span className="text-[10px] text-muted-foreground font-medium">{g.alliance}</span>}
                             </div>
-                          </TableCell>
-                          <TableCell className="text-muted-foreground text-sm">
-                            {g.alliance ?? "—"}
                           </TableCell>
                           {/* Aggregated stat columns */}
                           <TableCell className="text-sm tabular-nums">
@@ -1337,6 +1348,13 @@ export default function KvKPage() {
                   </TableFooter>
                 </Table>
               </div>
+              <TablePagination
+                pageIndex={pageIndex}
+                pageSize={pageSize}
+                totalItems={filtered.length}
+                onPageChange={setPageIndex}
+                onPageSizeChange={setPageSize}
+              />
             </CardContent>
           </Card>
 

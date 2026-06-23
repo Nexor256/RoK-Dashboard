@@ -307,10 +307,11 @@
   /* Sticky table header */
   .sticky-header thead th,
   .sticky-header thead td {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    background: hsl(var(--background));
+    position: sticky !important;
+    top: 64px !important;
+    z-index: 40 !important;
+    background-color: hsl(var(--card)) !important;
+    box-shadow: inset 0 -1px 0 0 hsl(var(--border)) !important;
   }
 
   /* Animated Blob Mesh */

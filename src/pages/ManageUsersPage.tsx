@@ -228,7 +228,8 @@ export default function ManageUsersPage() {
             ) : profiles.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">No players yet</p>
             ) : (
-              <Table>
+            <div className="w-full">
+              <Table className="sticky-header">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Player</TableHead>
@@ -271,6 +272,7 @@ export default function ManageUsersPage() {
                   ))}
                 </AnimatedTableBody>
               </Table>
+            </div>
             )}
           </CardContent>
         </Card>

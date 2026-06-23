@@ -298,8 +298,8 @@ export default function UploadPage() {
             <CardTitle>Data Preview</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <Table>
+            <div className="w-full">
+              <Table className="sticky-header">
                 <TableHeader>
                   <TableRow>
                     {expectedColumns.map((col) => (
